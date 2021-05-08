@@ -1,0 +1,10 @@
+{
+    "Clustername": "testeks",
+    "DesiredCapacity": "3",
+    "InstanceType": "t3a.medium",
+    "MaxSize": "3",
+    "MinSize": "1",
+    "NodeGrpName": "nodegrp1",
+    "Volume": "20",
+    "KeyName": "eksnodekey"
+}

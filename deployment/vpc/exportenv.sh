@@ -1,0 +1,14 @@
+export VPCID=vpc-0b1ff9dba813a87f0
+export PrivateAvailabilityZone2=us-east-1b
+export PublicAvailabilityZone1=us-east-1a
+export PrivateSubnet2ID=subnet-0ffcadbfc42f5ed6f
+export PrivateAvailabilityZone1=us-east-1a
+export PrivateSubnet1ID=subnet-03998e7660bf73520
+export PublicAvailabilityZone2=us-east-1b
+export PublicRouteTableId=rtb-016f5df6770afbbe6
+export PublicSubnet1ID=subnet-0bebdb877b82c5cb1
+export VPCRegion=us-east-1
+export PublicSubnet2ID=subnet-094f5787ed6ff1b6f
+export VPCCIDR=10.0.0.0/16
+export PrivateRouteTableId=rtb-02f43573b5c0c4cc8
+export StackName=vpcstack

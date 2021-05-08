@@ -1,0 +1,42 @@
+{
+    "Clustername": {
+        "Type": "String",
+        "Mandatory": true,
+        "value": "myekscluster"
+    },
+    "DesiredCapacity": {
+        "Type": "Number",
+        "Mandatory": true,
+        "value": 3
+    },
+    "InstanceType": {
+        "Type": "String",
+        "Mandatory": true,
+        "value": "t3a.medium"
+    },
+    "MinSize": {
+        "Type": "Number",
+        "Mandatory": true,
+        "value": 1
+    },
+    "MaxSize": {
+        "Type": "Number",
+        "Mandatory": true,
+        "value": 3
+    },
+    "NodeGrpName": {
+        "Type": "String",
+        "Mandatory": true,
+        "value": "nodegrp1"
+    },
+    "Volume": {
+        "Type": "Number",
+        "Mandatory": true,
+        "value": 20
+    },
+    "KeyName": {
+        "Type": "String",
+        "Mandatory": true,
+        "value": "eksnodekey"
+    }
+}

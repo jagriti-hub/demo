@@ -1,0 +1,37 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: testeks
+  region: us-east-1
+
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["*"]
+    
+vpc:
+  subnets:
+    private:
+      us-east-1a:
+        id: subnet-03998e7660bf73520
+      us-east-1b:
+        id: subnet-0ffcadbfc42f5ed6f
+    public:
+      us-east-1a:
+        id: subnet-0bebdb877b82c5cb1
+      us-east-1b:
+        id: subnet-094f5787ed6ff1b6f
+
+iam:
+  withOIDC: true
+
+managedNodeGroups:
+- desiredcapacity: 3
+  instanceType: t3a.medium
+  maxSize: 3
+  minSize: 1
+  name: nodegrp1
+  volumesize: 20
+  ssh:
+    allow: true
+    publicKeyName: eksnodekey
