@@ -1,0 +1,25 @@
+---
+- name: "Delete EKS Cluster"
+  hosts: localhost
+  become: true
+  tasks:
+  - block:
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: cluster
+          stepdesc: Delete EKS Cluster
+          stepno: 1
+          stepaction: delete
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Deleted
+    rescue:
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Failed

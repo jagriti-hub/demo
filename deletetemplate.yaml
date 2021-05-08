@@ -1,0 +1,13 @@
+---
+- hosts: localhost
+  tasks:
+    - include_role: 
+        name: delete-template
+      vars:
+        templateid: "{{listoftemplate.templateid}}"
+        templatedeploymentid: "{{listoftemplate.templatedeploymentid}}"
+        parametername: "{{listoftemplate.parametername}}"
+      loop:
+        "{{listoftemplates | reverse | list}}"
+      loop_control:
+        loop_var: listoftemplate

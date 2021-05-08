@@ -1,0 +1,31 @@
+---
+ServiceId: API-GATEWAY
+ServiceType: python
+EnvironmentType: Aws
+DependentEnvironments: '[]'
+ParameterOptions: '[]'
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/apigateway.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: API-GATEWAY
+EnvironmentName: Deploys a resource and create a method for api 
+Description: This Environment deploy a resource and create a method for api
+EnvironmentDocs: docs/apigatewaymethod.html
+EnvironmentGroup: Serverless
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+CreditsPerHour: 0
+Actions:
+  Create:
+    - Create
+    - Describe
+  Delete:
+    - Describe
+    - Delete
+  Update:
+    - Update
+    - Describe
+Limits:
+  - deploys a resource and create a method for api

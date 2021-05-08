@@ -1,0 +1,31 @@
+---
+ServiceId: DB-DYNAMODB
+ServiceType: ansible
+EnvironmentType: Aws
+DependentEnvironments: '[]'
+ParameterOptions: '[]'
+OutputOptions: '[]'
+Input:
+  Templatekey: Ansible/dbdynamodb.zip
+UsageType: Permanent
+CostType: Nocost
+EnvironmentName: DynamoDB Table
+EnvironmentId: DB-DYNAMODB
+Description: DynamoDB tables
+EnvironmentDocs: docs/dbdynamodb.html
+EnvironmentGroup: Docker
+ActionEnvironment: "Null"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - Build
+    # - DescribeBuild
+  Delete:
+    - Build
+    # - DescribeBuild
+CreditsPerHour: 0
+Limits:
+  - DynamoDB Tables
+
+    
+   

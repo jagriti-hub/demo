@@ -1,0 +1,25 @@
+- name: Step {{stepno}} - {{stepname}} - Task 1 - createtable-{{table.tablename}} -  Create DynamoDB Table
+  script: createtable.py "{{table}}" "{{apenvironment.region}}"
+  args:
+    executable: python3
+  register: createtable
+- debug:
+    var: tablepolicyarns
+- name: Step {{stepno}} - {{stepname}} - Task 2 - createpolicy - Create Policy to access dynamodb
+  community.aws.iam_managed_policy:
+    policy_name: "{{table.tablename}}-dynamodbrole"
+    policy_description: "A managed policy for Read Write access to dynamodb"
+    policy: "{{ lookup('template', 'managed_policy.json.j2') }}"
+    state: present
+  register: createpolicy
+- name: Step {{stepno}} - {{stepname}}  - Task 3 - codecommitoutput - Register the outputs
+  set_fact:
+    tablepolicyarncurrent:
+      - "arn:aws:iam::{{ap.accountid}}:policy/{{table.tablename}}-dynamodbrole"
+    tablenamescurrent:
+      - "{{table.tablename}}"
+      
+- name: Step {{stepno}} - {{stepname}}  - Task 3 - codecommitoutput - Register the outputs
+  set_fact:
+    tablepolicyarns: "{{ tablepolicyarns + tablepolicyarncurrent }}"
+    tablenames: "{{ tablenames + tablenamescurrent }}"

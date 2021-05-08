@@ -1,0 +1,66 @@
+apiname: testec2api
+AppType: pythonflask
+apidefinition:
+  apistage: v1
+  apiactions:
+  - actionname: status
+    actionmethod: GET
+  - actionname: dumpproduct
+    actionmethod: PUT
+  - actionname: getallproduct
+    actionmethod: GET
+  - actionname: getproductsbyid
+    actionmethod: GET
+EndpointConfigurationTypes: REGIONAL
+code:
+  CodeRepoType: codecommit
+  branches:
+    - dev
+    - test
+UserEnvironmentName: CLOUDWATCHLOGGROUP
+build:
+  branchname: test
+  buildtool: ziparchive
+  image:
+    type: ec2ami
+    instancetype: t2.micro
+db:
+  type: dynamodb
+  dynamodbtables:
+    - tablename: productdb-a1234
+      tableprefix: productdb
+      primarykey: id
+      primarykeyatt: S
+      sortkey: ''
+      sortkeyatt: S
+      infra:
+        readiops: 0
+        writeiops: 0
+      datapush:
+      - filename: cart.json
+      secondarykeys:
+      - secondarykey: ''
+        secondarykeyatt: S
+        secondarysortkey: ''
+        secondarysortkeyatt: S
+        infra:
+          readiops: 0
+          writeiops: 0
+        action: Create
+        
+InstanceType: t3a.medium
+MinSizeASGs: 2
+DesiredCapacityASG: 2
+MaxSizeASGs: 5
+LoadBalancerHealthCheckIntervalSeconds: 10
+InstancePort: 80
+InstanceProtocol: HTTP
+LoadBalancerHealthCheckTimeoutSeconds: 6 
+LoadBalancerHealthyThresholdCount: 3
+LoadBalancerUnhealthyThresholdCount: 3
+AutoscalingTargetValue: 70
+ASGCoolDown: 300
+EstimatedInstanceWarmup: 60
+EmailAddress: mounika@archeplay.com
+APIDomainName: testapiarche
+KeyPairName: archeplaykeypairdev10

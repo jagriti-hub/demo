@@ -1,0 +1,17 @@
+---
+- hosts: localhost
+  tasks:
+  - name: Include the List of Environment to be pushed
+    include_vars:
+      file: "{{Environmenthome}}/pushenvgroup/{{envlist}}.yaml"
+      name: listofenvgroups
+
+  - name: Include Push the Code
+    include_role:
+      name: pushenvgroupdb
+    vars:
+      EnvironmentName: "{{item}}"
+    loop:
+      "{{listofenvgroups.listofenvgroups | default([], true)}}"
+    loop_control:
+      loop_var: item

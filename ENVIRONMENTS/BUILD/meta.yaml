@@ -1,0 +1,29 @@
+---
+ServiceId: BUILD
+ServiceType: ansible
+EnvironmentType: Aws
+DependentEnvironments: '[]'
+ParameterOptions: '[]'
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/build.zip
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: BUILD
+EnvironmentName: BUILD for AWS Code commit
+Description: BUILD for AWS Code commit
+EnvironmentDocs: docs/build.html
+EnvironmentGroup: Code-Build
+ActionEnvironment: "Null"
+ParentEnvironment: "NULL"
+CreditsPerHour: 0
+Actions:
+  Create:
+    - Build
+    # - DescribeBuild
+  Delete:
+    - Build
+    # - DescribeBuild
+
+Limits:
+  - Repositories can be created

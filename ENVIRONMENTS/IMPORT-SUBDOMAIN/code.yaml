@@ -1,0 +1,81 @@
+---
+Description: Python Code for importing public subdomain in route53
+Metadata:
+  Architecture:
+    - Title: Import subdomain
+      Image: importsubdomain
+      Description: Architecture of public subdomain
+
+Parameters:
+ DomainName:
+  Description: Provide name of the domain. Specify a fully qualified domain name
+  Type: String
+
+Resources:
+ Create:
+  Metadata:
+   Description: This Python Resource  will create the Public hosted zone in Route53.
+  Type: boto3::route53::create_hosted_zone
+  Code: |
+    client = connection.client('route53')
+    HostedZones = client.list_hosted_zones()['HostedZones']
+    HostedZoneNames = []
+    for HostedZone in HostedZones:
+        HostedZoneNames.append(HostedZone['Name'])
+    if Input['DomainName']+'.' in HostedZoneNames:
+        response = client.list_hosted_zones_by_name(DNSName = Input["DomainName"])["HostedZones"]
+        HostedZoneId = response[0]['Id']
+        response = client.list_resource_record_sets(
+            HostedZoneId = HostedZoneId,
+        )
+        Outputs=[
+            {
+              "OutputKey":"DomainName",
+              "OutputValue": Input["DomainName"]
+            },
+            {
+              "OutputKey":"HostedZoneId",
+              "OutputValue": HostedZoneId
+            }
+            ]
+        OP={
+            "Outputs":Outputs,
+            "State":"Running"
+            }
+    else:
+        print('No Hosted zone present with this name in your aws accounts')
+        Outputs = []
+        OP={
+            "Outputs":Outputs,
+            "State":"Failed"
+            }
+
+ Delete: 
+  Type: boto3::route53::delete_hosted_zone
+  Metadata:
+   Description: This Python Resource  will delete the Public hosted zone in Route53 Created part of this Environment
+  Code: |
+    OP={
+        "State":"Deleted"
+        }
+ Describe: 
+  Type: boto3::route53::list_hosted_zones_by_name
+  Metadata:
+   Description: This Python Resource  will describe the Public hosted zone in Route53 Created part of this Environment
+  Code: |
+    OP={
+        "Outputs":Outputs,
+        "State":"Running"
+        }
+        
+Outputs:
+  DomainName:
+    Description: The name of the domain
+    
+  HostedZoneId:
+    Description: The ID that Amazon Route53 assigned to the hosted zone
+  
+  NSrecords:
+    Description: It lists the four name servers that are the authoritative name servers for your hosted zone
+  
+  

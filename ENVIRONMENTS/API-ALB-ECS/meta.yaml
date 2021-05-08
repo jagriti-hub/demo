@@ -1,0 +1,112 @@
+---
+ServiceId: API-ALB-ECS
+ServiceType: awscf
+EnvironmentType: Aws
+DependentEnvironments:
+  - VPC
+  - PUBLIC-SUBDOMAIN
+  - ECS-CLUSTER
+  - CART-DB-MYSQL
+  - ACM-CERT-PUBLIC
+  - CART-BUILD-DOCKER-START
+  - CLOUDWATCH-LOGGROUP
+ParameterOptions:
+  - GetEnvironment: VPC
+    GetOutputKey: VPCID
+    ParameterKey: VPCID
+  
+  - GetEnvironment: VPC
+    GetOutputKey: PublicSubnet1ID
+    ParameterKey: PublicSubnet1ID
+  
+  - GetEnvironment: VPC
+    GetOutputKey: PublicSubnet2ID
+    ParameterKey: PublicSubnet2ID
+  
+  - GetEnvironment: VPC
+    GetOutputKey: PrivateSubnet1ID
+    ParameterKey: PrivateSubnet1ID
+  
+  - GetEnvironment: VPC
+    GetOutputKey: PrivateSubnet2ID
+    ParameterKey: PrivateSubnet2ID
+
+  - GetEnvironment: PUBLIC-SUBDOMAIN
+    GetOutputKey: HostedZoneId
+    ParameterKey: Hostedzone
+  
+  - GetEnvironment: PUBLIC-SUBDOMAIN
+    GetOutputKey: DOMAINNAME
+    ParameterKey: DomainName
+  
+  - GetEnvironment: ECS-CLUSTER
+    GetOutputKey: Clustername
+    ParameterKey: ECSCluster
+  
+  - GetEnvironment: ACM-CERT-PUBLIC
+    GetOutputKey: CertificateArn
+    ParameterKey: Certificate
+
+  - GetEnvironment: CART-DB-MYSQL
+    GetOutputKey: DbEndpoint
+    ParameterKey: DBHOSTNAME
+  
+  - GetEnvironment: CART-DB-MYSQL
+    GetOutputKey: Dbname
+    ParameterKey: DBNAME
+  
+  - GetEnvironment: CART-DB-MYSQL
+    GetOutputKey: Dbusername
+    ParameterKey: DBUSERNAME
+  
+  - GetEnvironment: CART-DB-MYSQL
+    GetOutputKey: Dbpassword
+    ParameterKey: DBPASSWORD
+  
+  - GetEnvironment: CART-DB-MYSQL
+    GetOutputKey: DatabasePort
+    ParameterKey: RDSPort
+  
+  - GetEnvironment: CART-DB-MYSQL
+    GetOutputKey: SecurityGroupId
+    ParameterKey: RDSSGID
+  
+  - GetEnvironment: CART-BUILD-DOCKER-START
+    GetOutputKey: ImageCartapi
+    ParameterKey: cartapiimagename
+  
+  - GetEnvironment: CART-BUILD-DOCKER-START
+    GetOutputKey: ImageCartproxy
+    ParameterKey: cartproxyimagename
+  
+  - GetEnvironment: CLOUDWATCH-LOGGROUP
+    GetOutputKey: LogGroupName
+    ParameterKey: LOGGROUP
+  
+  - ParameterKey: AppName
+    AutoGenerate: cart-
+
+OutputOptions:
+  - GetOutputKey: CartEndPoint
+    Type: presignurl
+Input:
+  Templatekey: Aws/cartapiecs.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: API-ALB-ECS
+EnvironmentName: API ALB ECS
+Description: This template deploys a CART API Environment with Elastic Container Service
+EnvironmentDocs: docs/cartapiecs.html
+EnvironmentGroup: Cart-API
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - CreateStack
+    - DescribeStack
+  Delete:
+    - DeleteStack
+    - DescribeStack
+CreditsPerHour: 0
+Limits:
+  - Auto Scaling Group with Application Load Balancer

@@ -1,0 +1,43 @@
+---
+- name: "{{templateid}}-{{EnvironmentId}}-{{action}} - PYTHON - Load the Code"
+  include_vars: 
+    file: "{{ envdeploymentfolder }}/parameter.json"
+    name: envparameter
+
+- name: copy the loadyaml python file
+  copy: 
+    src: loadcode.py
+    dest: "{{ envdeploymentfolder }}/loadcode.py"
+    mode: 0755
+
+- name: parsing code.yaml file
+  shell: "python {{ envdeploymentfolder }}/loadcode.py {{apenvironment.deploymentid}} {{EnvironmentId}} {{Environmenthome}} {{ envdeploymentfolder }}"
+
+- name: Load code.yaml file for  the environment
+  include_vars:
+    file: "{{ envdeploymentfolder }}/code.yaml"
+    name: envtemplate
+  when: (ServiceType == "python")
+
+- name: Check that the Output.json exists
+  stat:
+    path: "{{ envdeploymentfolder }}/output.json"
+  register: stat_result
+
+- name: Create a output.json if not exist
+  copy:
+    content: "{}"
+    dest: "{{ envdeploymentfolder }}/output.json"
+  when: not stat_result.stat.exists
+
+- name: setting variables for Create Code
+  set_fact:
+    outputfile: "{{ envdeploymentfolder }}/output.json"
+- name: Generate create Python file 
+  template:
+    src: "archeplay.j2"
+    dest: "{{ envdeploymentfolder }}/{{action}}.py"
+- name: Execute create python file
+  script: "{{ envdeploymentfolder }}/{{action}}.py"
+  args:
+    executable: python3

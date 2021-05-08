@@ -1,0 +1,198 @@
+---
+- name: Stage - deployapi stage
+  block:
+    - name: Task 0 - Change pem permissions
+      command: chmod 400 "/tmp/awskey.pem"
+    
+    - name: Task 1 - deployapi-updateallpkg - upgrade all packages
+      yum:
+        name: '*'
+        state: latest
+      register: updateallpkg
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    - name: Task 2 - deployapi-installpython3 - install Python3 and nginx
+      shell: amazon-linux-extras install python3.8  -y
+      register: installpython3
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    - name: task 3 - deployapi-installpip3 - Install python-pip
+      yum:
+        name: python3-pip
+        state: latest
+      register: installpip3
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    
+    - name: Task 4 - deployapi-installnginx - install Python3 and nginx
+      shell: amazon-linux-extras install nginx1  -y
+      register: installnginx
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+      
+    - name: Task 5 - install xray daemon and cloudwatch agent
+      shell: |
+        curl https://s3.us-east-2.amazonaws.com/aws-xray-assets.us-east-2/xray-daemon/aws-xray-daemon-3.x.rpm -o /home/ec2-user/xray.rpm
+        yum install -y /home/ec2-user/xray.rpm
+        yum install -y amazon-cloudwatch-agent
+        yum install -y awslogs
+        systemctl start awslogsd
+        systemctl enable awslogsd.service
+      register: installxraydaemon
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+      
+    - name: Task 6 - deployapi-appuser create api service user
+      user:
+        name: "{{apiname}}"
+        comment: "{{apiname}} API Service User"
+        group: wheel
+        shell: /bin/bash
+        home: "/{{apiname}}"
+        create_home: yes
+      register: appuser
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    - name: Task 7 - deployapi-awsmodule Install Infra module, Virtualenv , aws module boto3
+      pip:
+        name: "{{item}}"
+        executable: pip3
+      loop:
+        - boto3
+        - boto
+        - botocore
+      register: awsmodule
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    - name: Task 8 - deployapi-virtualenv Install Infra module, Virtualenv , aws module boto3
+      pip:
+        name: "{{item}}"
+        executable: pip3
+      loop:
+        - virtualenv
+        - boto3
+        - boto
+      register: virtualenv
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    - name: Task 9 - Deploy the code as apiuser
+      import_tasks: deploycode.yaml
+      become: yes
+      become_user: "{{apiname}}"
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    - name: Task 15 - deployapi-apiconfig - copy gunicorn config to run the flask
+      copy:
+        remote_src: yes
+        src: "/{{apiname}}/conf/{{apiname}}.service"
+        dest: "/etc/systemd/system/{{apiname}}.service"
+      register: apiconfig
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    
+    - name: Task 16 - deployapi-apiconfig -  Create a directory for api logs if it does not exist
+      file:
+        path: /var/log/{{apiname}}
+        state: directory
+        mode: '0777'
+      register: apilogfile
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    
+    - name: Task 17 - deployapi-apiconfig - create gunicorn access log files
+      file:
+        path: "/var/log/{{apiname}}/access.log"
+        state: touch
+        mode: u+rwx,g+rwx,o+rwx
+      register: accesslogfile
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    
+    - name: Task 18 - deployapi-apiconfig - create gunicorn error log files
+      file:
+        path: "/var/log/{{apiname}}/error.log"
+        state: touch
+        mode: u+rwx,g+rwx,o+rwx
+      register: errorlogfile
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    
+    - name: Task 19 - deployapi-systemdreload - reload the config 
+      systemd:
+        daemon_reload: yes
+      register: systemdreload
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    - name: Task 20 - deployapi-apiservice start and enable api service
+      systemd:
+        state: started
+        enabled: yes
+        name: "{{apiname}}"
+      register: apiservice
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    - name: Task 21 - deployapi-nginxremovedefualt remove default nginx.conf
+      file:
+        path: /etc/nginx/conf.d/default.conf
+        state: absent
+      register: nginxremovedefualt
+    - name: Task 22 - deployapi-nginxconfig copy nginx.conf to reverse proxy the flask application
+      copy:
+        remote_src: yes
+        src: "/{{apiname}}/conf/nginx.conf"
+        dest: /etc/nginx/conf.d/nginx.conf
+      register: nginxconfig
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    - name: task 23 - deployapi-nginxservice start and run nginx
+      systemd:
+        state: started
+        enabled: yes
+        name: nginx
+      register: nginxservice
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    - name: Task 24 - deployapi-instancereboot reboot the machine
+      shell: "reboot"
+      async: 1
+      poll: 0
+      register: instancereboot
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+    - name: Task 25 - deployapi-waitforreboot Wait for the reboot 
+      wait_for_connection:
+        connect_timeout: 20
+        sleep: 5
+        delay: 5
+        timeout: 300
+      register: waitforreboot
+      delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+      
+    ######
+    - name: Task - 26 Populate service facts
+      service_facts:
+    
+    - name: Task - 27 setfact for to get api name for service
+      set_fact:
+        appservicename: '{{apiname}}.service'
+    - debug:
+        var: ansible_facts.services
+    
+    - name: Task - 28 Failed, if nginx service not running
+      fail:
+        msg: The system may not be provisioned according to the CMDB status.
+      when: item.key == "nginx.service" and item.value.state != "running"
+      loop:
+        "{{ansible_facts.services | dict2items}}"
+      
+    - name: "Task - 29 Failed, if {{appservicename}} service not running"
+      fail:
+        msg: The system may not be provisioned according to the CMDB status.
+      when: item.key == appservicename and item.value.state != "running"
+      loop:
+        "{{ansible_facts.services | dict2items}}"
+    ######
+      
+    - name: Step {{stepno}} - {{stepname}}  - Task 30 - Register the outputs
+      set_fact:
+        update_output: "false"
+        outputs: []
+  
+  rescue:
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+      register: failedmsg
+      when: ansible_failed_result.msg and ansible_failed_result.stderr is defined
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedmessage: "{{ansible_failed_result.msg}}"
+      when: failedmsg is skipped
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed

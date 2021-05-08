@@ -1,0 +1,23 @@
+import json,boto3,os,time
+from boto3 import session
+os.environ['AWS_DEFAULT_REGION']="{{region}}"
+action="Delete"
+template={{template|to_json}}
+code=template['Resources'][action]['Code']
+
+Input= {{parameter|to_json}}
+
+with open ('{{outputfile}}') as f:
+	outputs=f.read()
+js_outputs = json.loads(outputs)
+Outputs=[]
+for j,v in js_outputs.items():
+	a={}
+	a['OutputKey']=j
+	a['OutputValue']=v
+	Outputs.append(a)
+connection=boto3
+response={}
+code=code+"\nresponse=OP"
+exec(code)
+print(response)

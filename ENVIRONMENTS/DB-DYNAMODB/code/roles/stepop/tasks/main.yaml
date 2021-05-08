@@ -1,0 +1,12 @@
+- name: Task 1 - Creating environment status file
+  copy:
+    content:
+      State: "{{envstatus}}"
+    dest: "{{envdeploymentfolder}}/op.json"
+
+- name: Task 2 - Publish environment status
+  amazon.aws.aws_s3:
+    bucket: "{{ap.templaterepo}}"
+    object: "outputs/{{apenvironment.deploymentid}}/op.json"
+    src: "{{envdeploymentfolder}}/op.json"
+    mode: put

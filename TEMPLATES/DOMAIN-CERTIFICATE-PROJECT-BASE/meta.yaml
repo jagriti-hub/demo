@@ -1,0 +1,51 @@
+---
+TemplateId: DOMAIN-CERTIFICATE-PROJECT-BASE
+TemplateName: DOMAIN-CERTIFICATE PROJECT BASE WILL CREATE PUBLIC SUBDOMAIN IMPORT, SSL CERTIFICATE
+TemplateInputs: {}
+TemplateOutputs: {}
+DependentTemplate: []
+TemplateActions:
+  Create:
+    - envid: IMPORT-SUBDOMAIN
+      deployid: t711630d2
+      action: Create
+    - envid: ACM-CERT-PUBLIC
+      deployid: tc6223c13
+      action: Create
+  Delete:
+    - envid: ACM-CERT-PUBLIC
+      deployid: tc6223c13
+      action: Delete
+    - envid: IMPORT-SUBDOMAIN
+      deployid: t711630d2
+      action: Delete
+EnvironmentGroups:
+  - GroupName: DOMAIN-IMPORT
+    Environments:
+      - IMPORT-SUBDOMAIN
+  
+  - GroupName: CERTIFICATE
+    Environments:
+      - ACM-CERT-PUBLIC
+Environments:
+  - EnvironmentId: IMPORT-SUBDOMAIN
+    DeployId: t711630d2
+    dependentenv: []
+  
+  - EnvironmentId: ACM-CERT-PUBLIC
+    DeployId: tc6223c13
+    dependentenv:
+      - EnvId: IMPORT-SUBDOMAIN
+        DeployId: t711630d2
+
+Parameters:
+  DomainName:
+    Description: Provide name of the domain. Specify a fully qualified domain name. eg - example.example.com
+    Type: String
+    
+  Prefixdomain:
+    Description: Provide prefix that will be prefixed to domain name 
+    Type: String
+    value: '*'
+
+ProjectTemplate: True

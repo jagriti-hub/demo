@@ -1,0 +1,21 @@
+---
+workflows:
+  WorkflowId: wf-11111
+  WorkflowName: dockerimagebuildworkflow
+  Environments:
+  # - Name: ECR
+  #   parameters: default
+  #   deploymentid: 1124981
+  #   dependentenv: []
+  # - Name: CODE-COMMIT
+  #   parameters: default
+  #   deploymentid: 1124962
+  #   dependentenv: []
+  - Name: DOCKERIMAGE-BUILD
+    parameters: default
+    deploymentid: 1124982
+    dependentenv:
+      - name: ECR
+        deploymentid: 1124981
+      - name: CODE-COMMIT
+        deploymentid: 1124962

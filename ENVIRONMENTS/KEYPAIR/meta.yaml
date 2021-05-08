@@ -1,0 +1,30 @@
+---
+ServiceId: KEYPAIR
+ServiceType: python
+EnvironmentType: Aws
+DependentEnvironments: '[]'
+ParameterOptions:
+  - ParameterKey: KeyPairName
+    AutoGenerate: keypair
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/keypair.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: KEYPAIR
+EnvironmentName:  EC2 Keypair
+Description: Python Code for creating, Describing and Deleting the EC2 keypair.
+EnvironmentDocs: docs/keypair.html
+EnvironmentGroup: SECRET
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - Create
+    - Describe
+  Delete:
+    - Describe
+    - Delete
+CreditsPerHour: 0
+Limits:
+  - Keypair will be added to an account in the respespective regions

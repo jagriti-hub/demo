@@ -1,0 +1,31 @@
+---
+- debug:
+    var: function.Handler
+- name: Step {{stepno}} - {{stepname}} - Task 1 - Load docker file
+  template:
+    src: "Dockerfile.j2"
+    dest: "/tmp/{{apiname}}/{{function.name}}/Dockerfile"
+    mode: 0755
+- name: Step {{stepno}} - {{stepname}} - Task 1 - createfunction-{{function.name}} -  Create dockerimage for lambda
+  script: createimage.sh "{{apiname}}" "{{function.name}}" "{{apenvironment.region}}" "{{ap.accountid}}"
+  become: yes
+  register: buildoutput
+- name: Print version
+  debug:
+    msg: "Ansible Version: {{ buildoutput.stdout }}"
+# - name: Step {{stepno}} - {{stepname}} - Task 1 - createfunction-{{function.name}} -  Create package zip file for lambda
+#   script: createzip.sh "{{apiname}}" "{{function.name}}" "{{apenvironment.deploymentid}}" "{{ap.templaterepo}}"
+#   become: yes
+#   register: buildoutput
+# - name: Print version
+#   debug:
+#     msg: "Ansible Version: {{ buildoutput.stdout }}"
+# - name: Step {{stepno}} - {{stepname}}  - Task 2 - lambdaoutput - Register the outputs
+#   set_fact:
+#     lambdazipfilecurrent: "{ '{{function.name}}': 'lambdapackage/{{apenvironment.deploymentid}}/{{function.name}}.zip' }"
+# - name: "Append dict: execute append"
+#   set_fact:
+#     lambdazipfile: "{{ lambdazipfile | combine( lambdazipfilecurrent ) }}"
+# - name: Print version
+#   debug:
+#     msg: "Ansible Version: {{ buildoutput.stdout }}"

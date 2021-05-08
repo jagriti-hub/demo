@@ -1,0 +1,46 @@
+- name: stepevent - check event file exist
+  stat:
+    path: "{{envdeploymentfolder}}/event.json"
+  register: stat_result
+- name: stepevent - create event file if not exist
+  copy:
+    content: "{ 'StepEvents': [] }"
+    dest: "{{envdeploymentfolder}}/event.json"
+  when: not stat_result.stat.exists
+- name:  stepevent - load the event file
+  include_vars:
+    file: "{{envdeploymentfolder}}/event.json"
+    name: event 
+- debug: 
+    var: stepstatus
+- name: stepevent - record Failed events
+  set_fact:
+    StepEvents:
+      - StepName: "{{stepname}}"
+        StepNumber: "{{stepno}}"
+        StepDescription: "{{stepdesc}}"
+        StepStatus: "{{stepstatus}}"
+        FailedTask: "{{failedtask}}"
+        FailedMessage: "{{failedmessage}}"
+        Timestamp: "{{ ansible_date_time.iso8601_micro }}"
+  when: stepstatus == "BUILD_FAILED"  or stepstatus == "DELETE_FAILED" or stepstatus == "ROLLBACK_FAILED"
+  register: failedstep
+- name: stepevent - record Failed events
+  set_fact:
+    StepEvents:
+      - StepName: "{{stepname}}"
+        StepNumber: "{{stepno}}"
+        StepDescription: "{{stepdesc}}"
+        StepStatus: "{{stepstatus}}"
+        Timestamp: "{{ ansible_date_time.iso8601_micro }}"
+  when: stepstatus == "BUILD_IN_PROGRESS" or stepstatus == "BUILD_COMPLETED"  or stepstatus == "DELETE_IN_PROGRESS" or stepstatus == "DELETE_COMPLETED" or stepstatus == "ROLLBACK_IN_PROGRESS" or stepstatus == "ROLLBACK_COMPLETED"
+- name: stepevent - update event file
+  copy:
+    content: "{ 'StepEvents': {{ event.StepEvents + StepEvents }} }"
+    dest: "{{envdeploymentfolder}}/event.json"
+- name: stepevent - publish event file
+  amazon.aws.aws_s3:
+    bucket: "{{ap.templaterepo}}"
+    object: "events/{{apenvironment.deploymentid}}/event.json"
+    src: "{{envdeploymentfolder}}/event.json"
+    mode: put

@@ -1,0 +1,56 @@
+---
+- name: "Step {{stepno}} - {{stepname}} - Executing"
+  block:
+    - name: Step - 1 Create JSON Parameter File
+      script: parseparameterjson.py '{{envdeploymentfolder}}/parameter.yaml' "{{envdeploymentfolder}}"
+      args:
+        executable: python3
+      register: parseparamjson
+    
+    - debug:
+        var: parseparamjson
+    
+    - name: Step - 1 Task - 1 -  Get Inputs Filter and write the Parameter
+      copy:
+        src: '{{ envdeploymentfolder}}/paramyamltojson.json'
+        dest: "{{envdeploymentfolder}}/ecscapacityprovider.json"
+    
+    - name: Step - 1 Task - 2 -  Write the Template to the File
+      copy:
+        src: asgcreatecf.yaml
+        dest: "{{envdeploymentfolder}}"
+    - debug:
+        var: envdeploymentfolder
+    - debug:
+        var: template
+    
+    - name: Step 2 Create Stack
+      script: cfexeccreate.py "{{apenvironment.region}}" '{{envdeploymentfolder}}/ecscapacityprovider.json' "ASG-{{ apenvironment.deploymentid }}" "{{envdeploymentfolder}}/asgcreatecf.yaml" "{{ap.templaterepo}}" "{{apenvironment.deploymentid}}" "{{envdeploymentfolder}}"
+      args:
+        executable: python3
+      register: createstack
+    
+    - debug:
+        var: createstack
+    
+    - name: Task 3 register output of StackId
+      set_fact:
+        StackId: '{{createstack.stdout_lines[0]}}'
+    
+    - debug:
+        var: StackId
+    
+    - name: Task 4 - Stack outputs - Register the outputs
+      set_fact:
+        update_output: "true"
+        outputs:
+          - OutputKey: "StackId"
+            OutputValue: "{{StackId}}"
+  rescue:
+    - name: "Step {{stepno}} - {{stepname}} - Faiure Message Registering"
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  "Step {{stepno}} - {{stepname}}  is failed"

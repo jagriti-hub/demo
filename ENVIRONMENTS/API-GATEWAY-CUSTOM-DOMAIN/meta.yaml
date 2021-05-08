@@ -1,0 +1,38 @@
+---
+ServiceId: API-GATEWAY-CUSTOM-DOMAIN
+ServiceType: python
+EnvironmentType: Aws
+DependentEnvironments: 
+  - IMPORT-SUBDOMAIN
+  - ACM-CERT-PUBLIC
+ParameterOptions: []
+  # - GetEnvironment: PUBLIC-SUBDOMAIN
+  #   GetOutputKey: DOMAINNAME
+  #   ParameterKey: DomainName
+    
+  # - GetEnvironment: ACM-CERT-PUBLIC
+  #   GetOutputKey: CertificateARN
+  #   ParameterKey: ACMCertificate
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/apigatewaycustomdomain.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: API-GATEWAY-CUSTOM-DOMAIN
+EnvironmentName: Deploy a Custom domain for api
+Description: This will deploy a Custom domain for api
+EnvironmentDocs: docs/apigatewaycustomdomain.html
+EnvironmentGroup: ProjectEnvironments
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+CreditsPerHour: 0
+Actions:
+  Create:
+    - Create
+    - Describe
+  Delete:
+    - Describe
+    - Delete
+Limits:
+  - create a custom domain for api gateway
+

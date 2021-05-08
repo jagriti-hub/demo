@@ -1,0 +1,11 @@
+import json,boto3,os,time
+from boto3 import session
+os.environ['AWS_DEFAULT_REGION']="{{apenvironment.region}}"
+action="{{action}}"
+if "Outputs" in response:
+    final_output={}
+    for out in Outputs:
+    	final_output[out['OutputKey']]=out['OutputValue']
+    with open ('{{outputfile}}',"w+") as f:
+	    json.dump(final_output, f, indent = 6) 
+	    f.close()

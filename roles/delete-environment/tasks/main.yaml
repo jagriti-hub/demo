@@ -1,0 +1,60 @@
+- name: Set the Deployment Folder variable
+  set_fact:
+    envsourcefolder: "{{Environmenthome}}/ENVIRONMENTS/{{EnvironmentId}}"
+    envdeploymentfolder: "{{templatedeploymentfolder}}/environments/{{apenvironment.deploymentid}}/"
+- debug:
+    var: envdeploymentfolder
+
+- name:  Load Meta
+  include_vars:
+    file: "{{Environmenthome}}/ENVIRONMENTS/{{EnvironmentId}}/meta.yaml"
+    name: meta
+
+- name: load the parameter file
+  include_vars: 
+    file: "{{ envdeploymentfolder }}/parameter.json"
+    name: parameter
+  when: ( meta['ServiceType'] == "python" )
+  
+- name: Load code.yaml file fo  the enviroinment
+  include_vars:
+    file: "{{envdeploymentfolder}}/code.yaml"
+    name: template
+  when: ( meta['ServiceType'] == "python" )
+
+- name: setting variables for Create Code
+  set_fact:
+    outputfile: "{{envdeploymentfolder}}/output.json"
+  
+- name: Delete a Cloudformation Stack if EnvType is Cloudformation
+  cloudformation:
+    stack_name: "{{ EnvironmentId }}-{{apenvironment.deploymentid}}"
+    state: "absent" 
+    region: "{{ apenvironment.region }}"
+  when: ( meta['ServiceType'] == "awscf" )
+
+- name:  Execute Describe if it is Python
+  script: "{{envdeploymentfolder}}/Describe.py"
+  args:
+    executable: python3
+  when: ( meta['ServiceType'] == "python" )
+######
+- name: Generate Delete Python file 
+  template:
+    src: "archeplay.j2"
+    dest: "{{envdeploymentfolder}}/Delete.py"
+  when: ( meta['ServiceType'] == "python" )
+######
+- name: Execute Delete if it is Python
+  script: "{{envdeploymentfolder}}/Delete.py"
+  args:
+    executable: python3
+  when: ( meta['ServiceType'] == "python" )
+- name: Execute Delete if it is Ansible
+  include_role: 
+    name: deploy-ansible
+  when: ( meta['ServiceType'] == "ansible" )
+- name: Delete all the Temperary Files
+  file:
+    path: "{{ envdeploymentfolder }}"
+    state: absent

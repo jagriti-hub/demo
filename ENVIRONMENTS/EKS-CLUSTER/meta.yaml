@@ -1,0 +1,29 @@
+---
+ServiceId: EKS-CLUSTER
+ServiceType: ansible
+EnvironmentType: Aws
+DependentEnvironments: '[]'
+ParameterOptions: '[]'
+OutputOptions: '[]'
+Input:
+  Templatekey: Ansible/ekscluster.zip
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: EKS-CLUSTER
+EnvironmentName: Deploys an EKS Cluster.
+Description: This template deploys an EKS Cluster.
+EnvironmentDocs: docs/ekscluster.html
+EnvironmentGroup: ProjectEnvironments
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - Build
+    # - DescribeStack
+  Delete:
+    - Build
+    # - DescribeStack
+CreditsPerHour: 0
+Limits:
+  - One EKS cluster
+

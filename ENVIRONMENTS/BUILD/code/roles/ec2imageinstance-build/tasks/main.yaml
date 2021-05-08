@@ -1,0 +1,157 @@
+---
+- name: Task 1 - createmachine-install-aws-modules Install AWS Python
+  block:
+    - name: Task 1 - createmachine-awsmodules Install AWS Python Modules
+      pip:
+        name: "{{item}}"
+        executable: pip3
+      loop:
+        - boto
+        - boto3
+        - awscli
+      register: awsmodules
+    - name: Task 2 - createmachine-createsg Security Group for AMI Machine
+      amazon.aws.ec2_group:
+        name: "{{apiname}}-amisg"
+        description: API AMI machine SG Group
+        vpc_id: "{{vpcid}}"
+        region: "{{apenvironment.region}}"
+        rules:
+          - proto: tcp
+            ports:
+            - 80
+            - 22
+            cidr_ip: 0.0.0.0/0
+            rule_desc: allow all on port 80
+      register: createsg
+    - name: Task 3 - createmachine-createkeypair Create EC2 Keypair
+      ec2_key:
+          name: "{{apiname}}-amikey"
+          region: "{{apenvironment.region}}"
+      register: createkeypair
+    - name: Task 3-1 - Save private key
+      copy: 
+        content: "{{createkeypair.key.private_key}}" 
+        dest: "/tmp/awskey.pem" 
+        owner: ec2-user
+        group: ec2-user
+      when: createkeypair.changed
+    - name: Task 4 - createmachine-createrole - Create a role with s3 access
+      community.aws.iam_role:
+        name: "{{apiname}}-amiinstancerole"
+        assume_role_policy_document: "{{ lookup('file','policy.json') }}"
+        create_instance_profile : true
+      register: createrole
+    - name: Task 5 - createmachine-createpolicy - Create S3 policy from template
+      community.aws.iam_policy:
+        iam_type: role
+        iam_name: "{{apiname}}-amiinstancerole"
+        policy_name: "{{apiname}}-pkgrepopolicy"
+        state: present
+        policy_json: "{{ lookup( 'template', 'packagerepo.json.j2') }}"
+      register: createpolicy
+      
+    ###############
+    - name: Task 4 - createmachine-createrole - Create a role with xray access
+      community.aws.iam_role:
+        name: "{{apiname}}-amiinstancerole-xray"
+        assume_role_policy_document: "{{ lookup('file','policy.json') }}"
+        create_instance_profile : true
+      register: createrolexray
+    - name: Task 5 - createmachine-createpolicy - Create xray policy from template
+      community.aws.iam_policy:
+        iam_type: role
+        iam_name: "{{apiname}}-amiinstancerole-xray"
+        policy_name: "{{apiname}}-xraypolicy"
+        state: present
+        policy_json: "{{ lookup( 'template', 'packagexray.json.j2') }}"
+      register: createpolicyxray
+      ##################
+      
+      ###############
+    - name: Task 6 - createmachine-createrole - Create a role with cloudwatch access
+      community.aws.iam_role:
+        name: "{{apiname}}-amiinstancerole-cw"
+        assume_role_policy_document: "{{ lookup('file','policy.json') }}"
+        create_instance_profile : true
+      register: createrolecw
+    - name: Task 7 - createmachine-createpolicy - Create cloudwatch policy from template
+      community.aws.iam_policy:
+        iam_type: role
+        iam_name: "{{apiname}}-amiinstancerole-cw"
+        policy_name: "{{apiname}}-cwpolicy"
+        state: present
+        policy_json: "{{ lookup( 'template', 'packagecw.json.j2') }}"
+      register: createpolicycw
+      ##################
+      
+    - name: Task 8 - createmachine-rolesync - wait untill Role takes effect
+      community.aws.iam_role_info: 
+        name: "{{apiname}}-amiinstancerole" 
+        region: "{{apenvironment.region}}"
+      register: rolesync
+      until: "'failed' in rolesync"
+      retries: 18
+      delay: 10
+    
+    - name: registeramiid
+      set_fact:
+        amiidvalue: "{{ lookup('vars', 'amiid_' + ostype + '_' + apenvironment['region']) }}"
+    
+    - debug:
+        var: amiidvalue
+    
+    - name: Task 9 - createmachine-createinstance - Create Ec2 instances
+      community.aws.ec2_instance:
+        name: "{{apiname}}-amiinstance"
+        key_name: "{{apiname}}-amikey"
+        region: "{{apenvironment.region}}"
+        vpc_subnet_id: "{{subnetid}}"
+        instance_type: "{{build.image.instancetype}}"
+        instance_role: "{{apiname}}-amiinstancerole"
+        security_group: "{{apiname}}-amisg"
+        network:
+          assign_public_ip: true
+        image_id: "{{amiidvalue}}"
+        state: running
+        wait: yes
+        wait_timeout: 500
+      register: createinstance
+      
+    - name: Task 10 - createmachine-addinventory - Add new instance to host group
+      add_host:
+        hostname: "{{ createinstance.instances[0].public_ip_address }}"
+        groupname: amiinstance
+        ansible_user: ec2-user
+        ansible_ssh_private_key_file: "/tmp/awskey.pem"
+        ansible_become: yes
+        ansible_ssh_common_args: '-o StrictHostKeyChecking=no'
+      register: addinventory
+    - name: task 11 - createmachine-sshwait - Wait for SSH to come up
+      wait_for: 
+        host: "{{ createinstance.instances[0].public_ip_address }}" 
+        port: 22 
+        delay: 10
+        timeout: 300
+      register: sshwait
+    
+    - name: Step {{stepno}} - {{stepname}}  - Task 10 - Register the outputs
+      set_fact:
+        update_output: "false"
+        outputs: []
+  rescue:
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+      register: failedmsg
+      when: ansible_failed_result.msg and ansible_failed_result.stderr is defined
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedmessage: "{{ansible_failed_result.msg}}"
+      when: failedmsg is skipped
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed

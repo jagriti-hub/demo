@@ -1,0 +1,35 @@
+---
+- name: "Create Code Repo for the Archeplay Template"
+  hosts: localhost
+  become: true
+  tasks:
+  - block:
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: codecommitcheckout
+          stepdesc: Checkout Code Commit Repository
+          stepno: 1
+          stepaction: build
+        when: code.CodeRepoType == "codecommit"
+        
+      - name: Execute python flask
+        include_tasks: Createpythonflask.yaml
+        when: AppType == "pythonflask"
+        
+      - name: Execute python lambda
+        include_tasks: Createpythonlambda.yaml
+        when: AppType == "pythonlambda"
+      
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Running
+    rescue:
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Failed

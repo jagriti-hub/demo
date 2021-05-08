@@ -1,0 +1,23 @@
+---
+- name: Step {{stepno}} - {{stepname}} - Executing
+  block:
+    - name:
+      template: 
+        src: triggers.json.j2
+        dest: "/tmp/triggers.json"
+    - name: Step {{stepno}} - {{stepname}} - Task 1  - createcodecommit  - Create Code Commit Repository
+      command: aws codecommit put-repository-triggers --repository-name {{apiname}} --cli-input-json file:///tmp/triggers.json --region {{apenvironment.region}}
+      register: resourceoutput1
+    
+    - name: Step {{stepno}} - {{stepname}}  - Task 7 - register outputs to outputs.json
+      set_fact:
+        update_output: "false"
+        outputs: []
+  rescue:
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed

@@ -1,0 +1,435 @@
+---
+Description: |
+  Environment deploys REST API for Cart using ECS (Elastic Container Service) with AutoScaling. 
+  Application LoadBalancer will distributes the request to containers in ECS.
+  Public DNS EndPoint is added in the Route53 Domain name.
+  The API can be accessed via EndPoint https://cart-<example>.<domain-name>/api/v1.0/<actionname>
+
+Metadata:
+  Architecture:
+    - Title: API-ALB-ECS
+      Image: API-ALB-ECS
+      Description: API-ALB-ECS
+    
+Parameters:
+  Hostedzone:
+    Description: Hostedzone where the EndPoint of the API will be updated. This value comes from the Dependent Environment PUBLIC-SUBDOMAIN
+    Type: String
+  
+  DomainName:
+    Description: Domain name where the EndPoint of the API will be updated. This value comes from the Dependent Environment PUBLIC-SUBDOMAIN
+    Type: String
+  
+  AppName:
+    Description: Name of the EndPoint. This value is auto generated for the trial app.
+    Type: String
+
+  LoadBalancerHealthCheckPath:
+    Description: URL will be validated for Health check of the CART API.
+    Type: String
+    Default: /status
+  
+  LoadBalancerHealthCheckIntervalSeconds:
+    Description: Interval at which HealthCheck is monitored
+    Type: Number
+    Default: 10
+
+  
+  InstancePort:
+    Description: InstancePort at which HealthCheck is monitored. Should be value from 1 to 65535
+    Type: Number
+    Default: 80
+
+  InstanceProtocol:
+    Description: Instance protocol at which HealthCheck is monitored
+    Type: String
+    Default: HTTP
+
+  LoadBalancerHealthCheckTimeoutSeconds:
+    Description: Timeout for the HealthCheck monitoring. Member must have value less than or equal to 120 and must be smaller than the interval
+    Type: Number
+    Default: 5
+  
+  LoadBalancerHealthyThresholdCount:
+    Description: Healthy Threshold Count for LoadBalancer for health check monitoring.
+    Type: Number
+    Default: 3
+  
+  LoadBalancerUnhealthyThresholdCount:
+    Description: Unhealthy Threshold Count for LoadBalancer for health check monitoring.
+    Type: Number
+    Default: 2
+  
+  Certificate:
+    Description: TLS Certificate for the CART API. This value comes from the Dependent Environment ACM-CERT-PUBLIC
+    Type: String
+  
+  PublicSubnet1ID:
+    Description: First Public subnet ID on which ApplicationLoadBalancer is deployed. This value comes from the Dependent Environment VPC
+    Type: String
+  
+  PublicSubnet2ID:
+    Description: Second Public subnet ID on which ApplicationLoadBalancer is deployed. This value comes from the Dependent Environment VPC
+    Type: String
+  
+  ECSCluster:
+    Description: ECS Cluster on which CART API is Deployed. This value comes from the Dependent Environment ECS-CLUSTER
+    Type: String
+  
+  proxyimagename:
+    Description: Name of the CART API nginx reverse Proxy ECR Docker Image. This value comes from the Dependent Environment CART-BUILD-DOCKER-START
+    Type: String
+  
+  apiimagename:
+    Description: Name of the CART API ECR docker Image. This value comes from the Dependent Environment CART-BUILD-DOCKER-START
+    Type: String
+  
+  MinSizeASGs:
+    Description: Minimum number of ECS docker containers to be launched in ECS Service AutoScaling.
+    Type: Number
+    Default: 1
+    
+  DesiredCapacityASG:
+    Description: Desired number of ECS docker containers to be launched in ECS Service AutoScaling.
+    Type: Number
+    Default: 1
+
+  MaxSizeASGs:
+    Description: Maximum number of ECS docker containers to be launched in ECS Service AutoScaling.
+    Type: Number
+    Default: 2
+  
+  AutoscalingTargetValue:
+    Description: CPU Utilization percentage on which AutoScaling is triggered.
+    Type: Number
+    Default: 70
+  
+  ASGCoolDown:
+    Description: ECS will wait for cooldown seconds before scaling down the ECS Container.
+    Type: Number
+    Default: 60
+  
+  VPCID:
+    Description: VPC ID on which ECS Container will be running. This value comes from the Dependent Environment VPC
+    Type: String
+  
+  PrivateSubnet1ID:
+    Description: First Private subnet ID on which ECS Container will be running. This value comes from the Dependent Environment VPC
+    Type: String
+  
+  PrivateSubnet2ID:
+    Description: Second Private subnet ID on which ECS Container will be running. This value comes from the Dependent Environment VPC
+    Type: String
+
+  LOGGROUP:
+    Description: The CloudWatch Log Group where CART API logs are pushed. This value comes from the Dependent Environment CLOUDWATCH-LOGGROUP
+    Type: String
+    
+
+Resources:
+  ECSTaskRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      Description: IAM Role for the CART API Containers will assume.
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - sts:AssumeRole
+          Principal:
+            Service: ecs-tasks.amazonaws.com
+      Description: Role For ECS To Pull Images From ECR
+      Policies:
+      - PolicyName: 
+          Fn::Sub: ${AWS::StackName}-task-policy
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - ecr:*
+            - logs:*
+            Resource: "*"
+  
+  ECSServiceRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      Description: IAM Role for the ECS Services will assume to add/remove the containers to the Application LoadBalancer.
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - ecs.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName:
+            Fn::Sub: ${AWS::StackName}-svc-policy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - elasticloadbalancing:DeregisterInstancesFromLoadBalancer
+                  - elasticloadbalancing:DeregisterTargets
+                  - elasticloadbalancing:Describe*
+                  - elasticloadbalancing:RegisterInstancesWithLoadBalancer
+                  - elasticloadbalancing:RegisterTargets
+                  - ec2:Describe*
+                  - ec2:AuthorizeSecurityGroupIngress
+                Resource: "*"
+  
+  ECSAutoscalingRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      Description: IAM Role for the ECS to autoscale using cloudwatch alarms.
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - application-autoscaling.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName:
+            Fn::Sub: ${AWS::StackName}-ASG-Policy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - application-autoscaling:*
+                  - cloudwatch:DescribeAlarms
+                  - cloudwatch:PutMetricAlarm
+                  - ecs:DescribeServices
+                  - ecs:UpdateService
+                Resource: "*"
+  
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      Description: Security Group for the LoadBalancer with 443 ports open to internet.
+    Properties:
+      GroupDescription: Allow https to client host
+      VpcId: 
+        Ref: VPCID
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 443
+        ToPort: 443
+        CidrIp: 0.0.0.0/0
+  
+  ECSSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      Description: Security group for the ECS service that allows the traffic only from the LoadBalancer on the instance port.
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId:
+        Ref: VPCID
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort:
+          Ref: InstancePort
+        ToPort:
+          Ref: InstancePort
+        SourceSecurityGroupId:
+          Ref: LoadBalancerSecurityGroup
+  
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Metadata:
+      Description: An Application LoadBalancer deployed on a public subnet which can route traffic to ECS Containers.
+    Properties: 
+      Name: 
+        Fn::Sub: "${AWS::StackName}"
+      Scheme: internet-facing
+      SecurityGroups: 
+        - !Ref LoadBalancerSecurityGroup
+      Subnets: 
+        - 
+          Ref: PublicSubnet1ID
+        - 
+          Ref: PublicSubnet2ID
+      Tags: 
+        - Key: Name
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+      Type: application
+
+  ApplicationLoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Metadata:
+      Description: Application LoadBalancer's TargetGroup where the ECS containers are added with instance health checks.
+    DependsOn: ApplicationLoadBalancer
+    Properties: 
+      HealthCheckEnabled: True
+      HealthCheckIntervalSeconds:
+        Ref: LoadBalancerHealthCheckIntervalSeconds
+      HealthCheckPath:
+        Ref: LoadBalancerHealthCheckPath
+      HealthCheckPort:
+        Ref: InstancePort
+      HealthCheckProtocol:
+        Ref: InstanceProtocol
+      HealthCheckTimeoutSeconds:
+        Ref: LoadBalancerHealthCheckTimeoutSeconds
+      HealthyThresholdCount:
+        Ref: LoadBalancerHealthyThresholdCount
+      UnhealthyThresholdCount:
+        Ref: LoadBalancerUnhealthyThresholdCount
+      Name:
+        Fn::Sub: "${AWS::StackName}-TG"
+      Port: 80
+      Protocol: HTTP
+      Tags: 
+        - Key: Name
+          Value: 
+            Fn::Sub: "${AWS::StackName}-TG"
+      TargetType: ip
+      VpcId:
+        Ref: VPCID
+  
+  ApplicationLoadBalancerListener:  
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Metadata:
+      Description: An Application LoadBalancer's Listener with https protocol and TLS Certificate.
+    Properties: 
+      DefaultActions: 
+        - 
+          TargetGroupArn:
+            Ref: ApplicationLoadBalancerTargetGroup
+          Type: forward
+      LoadBalancerArn:
+        Ref: ApplicationLoadBalancer
+      Port: 443
+      Protocol: HTTPS
+      Certificates: 
+        -
+          CertificateArn:
+            Ref: Certificate
+
+  ECSTaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Metadata:
+      Description: ECS Task Definition for the CART API where containers are defined. 
+    Properties:
+      ContainerDefinitions:
+        - 
+          Name: sample
+          Image:
+            Ref: apiimagename
+          Essential: true
+          PortMappings: 
+            - ContainerPort: 80
+              HostPort: 80
+          LogConfiguration: 
+            LogDriver: awslogs
+            Options: 
+              awslogs-group:
+                Ref: LOGGROUP
+              awslogs-region: 
+                Fn::Sub: ${AWS::Region}
+              awslogs-stream-prefix: cart
+              
+      Cpu: 512
+      Family:
+        Fn::Sub: ${AWS::StackName}-def
+      Memory: 1024
+      NetworkMode: awsvpc
+      RequiresCompatibilities:
+        - FARGATE
+      ExecutionRoleArn:
+        Fn::GetAtt:
+          - ECSTaskRole
+          - Arn
+  
+  ECSService:
+    Type: AWS::ECS::Service
+    Metadata:
+      Description: ECS Service to be run on the Cluster.
+    DependsOn: ApplicationLoadBalancerListener
+    Properties:
+      Cluster:
+        Ref: ECSCluster
+      DesiredCount:
+        Ref: DesiredCapacityASG
+      LaunchType: FARGATE
+      LoadBalancers:
+      - ContainerName: sample
+        ContainerPort: '80'
+        TargetGroupArn:
+          Ref: ApplicationLoadBalancerTargetGroup
+      ServiceName:
+        Fn::Sub: ${AWS::StackName}
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          SecurityGroups:
+          - Ref: ECSSecurityGroup
+          Subnets:
+            - Ref: PrivateSubnet1ID
+            - Ref: PrivateSubnet2ID
+      TaskDefinition:
+        Ref: ECSTaskDefinition
+
+  ECSServiceScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    Metadata:
+      Description: ECS Target for autoscaling.
+    DependsOn: ECSService
+    Properties:
+      MaxCapacity:
+        Ref: MaxSizeASGs
+      MinCapacity:
+        Ref: MinSizeASGs
+      ResourceId:
+        Fn::Join:
+          - ''
+          - - service/
+            - Ref: ECSCluster
+            - "/"
+            - Fn::GetAtt:
+              - ECSService
+              - Name
+      RoleARN: !GetAtt ECSAutoscalingRole.Arn
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+  
+  ECSServiceScalingPolicy:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Metadata:
+      Description: ECS ScalingPolicy for the ECS service to scale up or scale down.
+    Properties:
+      PolicyName:
+        Fn::Sub: ${AWS::StackName}-scalingpolicy
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId:
+        Ref: ECSServiceScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        DisableScaleIn: false
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown:
+          Ref: ASGCoolDown
+        ScaleOutCooldown:
+          Ref: ASGCoolDown
+        TargetValue:
+          Ref: AutoscalingTargetValue
+
+Outputs:
+  
+  CartAPIStatusURL:
+    Description: Status EndPoint of the Cart API
+    Value: !Join [ "", ["https://", Ref: AppName, '.', Ref: DomainName, "/status"  ] ]
+
+  # CartAPIMonitoring:
+  #   Description: Click this link to monitor ECS Services.
+  #   Value: !Join []
+  #   https://console.aws.amazon.com/ecs/home?region=us-east-1#/clusters/ECS-CLUSTER-Env-7e0ccb60-fargate-jpfalrQUTlXJ/services/CART-API-ECS-Env-c15f1c64/metrics

@@ -1,0 +1,16 @@
+---
+workflows:
+  WorkflowId: wf-c00007
+  WorkflowName: codecommitworkflow
+  Environments:
+  - Name: PROJECT-BASE
+    parameters: default
+    deploymentid: d123458
+    dependenttemplates: []
+  - Name: API-PYTHON-FLASK-EC2
+    parameters: default
+    deploymentid: d123458
+    dependenttemplates:
+      - name: PROJECT-BASE
+        deploymentid: d123458
+      

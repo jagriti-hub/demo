@@ -1,0 +1,117 @@
+---
+Description: Python Code for creating public subdomain in route53
+Metadata:
+  Architecture{{deploymentid}}:
+    - Title: Public subdomain
+      Image: publicsubdomain
+      Description: Architecture of public subdomain
+
+Parameters:
+ DomainName{{deploymentid}}:
+  Description: Provide name of the domain. Specify a fully qualified domain name
+  Type: String
+  
+
+Resources:
+ Create:
+  Metadata:
+   Description: This Python Resource  will create the Public hosted zone in Route53.
+  Type: boto3::route53::create_hosted_zone
+  Code: |
+    import time,math,random
+    client = connection.client('route53')
+    prefix = "HZ-"
+    m = time.time()
+    sec = math.floor(m)
+    ran = random.randint(0,96764685)
+    usec = math.floor(ran * (m - sec))
+    a= usec+sec
+    x = '%3x' % (a)
+    l = list(x)
+    random.shuffle(l)
+    y = ''.join(l)
+    uniqid = prefix+y
+    response = client.list_hosted_zones()
+    HostedZone_Name=[]
+    for item in response['HostedZones']:
+        HostedZone_Name.append(item["Name"])
+    domain = Input["DomainName{{deploymentid}}"] + '.'
+    if domain in HostedZone_Name:
+        Outputs = ["Domain Name Already exist"]
+    else:
+        response = client.create_hosted_zone(
+            Name = Input["DomainName{{deploymentid}}"],
+            CallerReference = uniqid,
+            HostedZoneConfig={
+                'PrivateZone': False
+            },
+        )
+        Outputs=[
+        {
+          "OutputKey":"HostedZoneId{{deploymentid}}",
+          "OutputValue": response['HostedZone']['Id']
+        }
+        ]
+    OP={
+        "Outputs":Outputs,
+        "State":"Created"
+        }
+ Delete: 
+  Type: boto3::route53::delete_hosted_zone
+  Metadata:
+   Description: This Python Resource  will delete the Public hosted zone in Route53 Created part of this Environment
+  Code: |
+    client = connection.client('route53')
+    response = client.list_hosted_zones_by_name(DNSName = Input["DomainName{{deploymentid}}"])["HostedZones"]
+    HostedZoneId = response[0]['Id']
+    response = client.delete_hosted_zone(
+        Id = HostedZoneId
+    )
+    OP={
+        "State":"Deleted"
+        }
+ Describe: 
+  Type: boto3::route53::list_hosted_zones_by_name
+  Metadata:
+   Description: This Python Resource  will describe the Public hosted zone in Route53 Created part of this Environment
+  Code: |
+    client = connection.client('route53')
+    response = client.list_hosted_zones_by_name(DNSName = Input["DomainName{{deploymentid}}"])["HostedZones"]
+    HostedZoneId = response[0]['Id']
+    response = client.list_resource_record_sets(
+        HostedZoneId = HostedZoneId,
+    )
+    Value =[]
+    ns_records = response['ResourceRecordSets'][0]['ResourceRecords']
+    for value in ns_records:
+        Value.append(value["Value"])
+    Outputs=[
+        {
+          "OutputKey":"DOMAINNAME{{deploymentid}}",
+          "OutputValue": Input["DomainName{{deploymentid}}"]
+        },
+        {
+          "OutputKey":"HostedZoneId{{deploymentid}}",
+          "OutputValue": HostedZoneId
+        },
+        {
+          "OutputKey":"NSrecords{{deploymentid}}",
+          "OutputValue": Value
+        },
+        ]
+    OP={
+        "Outputs":Outputs,
+        "State":"Running"
+        }
+        
+Outputs:
+  DomainName{{deploymentid}}:
+    Description: The name of the domain
+    
+  HostedZoneId{{deploymentid}}:
+    Description: The ID that Amazon Route53 assigned to the hosted zone
+  
+  NSrecords{{deploymentid}}:
+    Description: It lists the four name servers that are the authoritative name servers for your hosted zone
+  
+  

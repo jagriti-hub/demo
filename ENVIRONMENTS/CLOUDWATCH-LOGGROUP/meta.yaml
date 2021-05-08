@@ -1,0 +1,31 @@
+---
+ServiceId: CLOUDWATCH-LOGGROUP
+ServiceType: awscf
+EnvironmentType: Aws
+DependentEnvironments: '[]'
+ParameterOptions: '[]'
+OutputOptions:
+  - GetOutputKey: LogGroupName
+    Type: presignurl 
+Input:
+  Templatekey: Aws/cloudwatchloggroup.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: CLOUDWATCH-LOGGROUP
+EnvironmentName: Deploy a deploys cloudwatch log group for the services for storing the generated logs.
+Description: This template deploys cloudwatch log group for the services for storing the generated logs.
+EnvironmentDocs: docs/cloudwatchloggroup.html
+EnvironmentGroup: ProjectEnvironments
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - CreateStack
+    - DescribeStack
+  Delete:
+    - DeleteStack
+    - DescribeStack
+CreditsPerHour: 0
+Limits:
+  - A Log Group that can store logs in the Cloud watch
+

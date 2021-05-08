@@ -1,0 +1,14 @@
+---
+- hosts: localhost
+  tasks:
+    - include_role: 
+        name: deploy-template
+      vars:
+        templateid: "{{listoftemplate.templateid}}"
+        templatedeploymentid: "{{listoftemplate.templatedeploymentid}}"
+        parametername: "{{listoftemplate.parametername}}"
+        dependenttemplate: "{{listoftemplate.dependenttemplate}}"
+      loop:
+        "{{listoftemplates}}"
+      loop_control:
+        loop_var: listoftemplate

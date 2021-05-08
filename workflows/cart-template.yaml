@@ -1,0 +1,29 @@
+---
+workflows:
+  WorkflowId: wf-012346
+  WorkflowName: cartworkflow
+  Environments:
+  - Name: CART-DB-MYSQL
+    parameters: default
+    deploymentid: 012348
+    dependentenv: []
+  - Name: CART-BUILD-DOCKER
+    parameters: default
+    deploymentid: 012349
+    dependentenv: []
+  - Name: CART-BUILD-DOCKER-START
+    parameters: default
+    deploymentid: 123450
+    dependentenv:
+    - name: CART-BUILD-DOCKER
+      deploymentid: 012349
+  - Name: CART-API-ECS
+    parameters: default
+    deploymentid: 123451
+    dependentenv:
+    - name: CART-DB-MYSQL
+      deploymentid: 012348
+    - name: CART-BUILD-DOCKER
+      deploymentid: 012349
+    - name: CART-BUILD-DOCKER-START
+      deploymentid: 012340

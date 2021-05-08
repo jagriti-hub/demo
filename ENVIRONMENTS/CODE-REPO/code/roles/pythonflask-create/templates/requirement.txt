@@ -1,0 +1,7 @@
+gunicorn
+flask
+Flask-SQLAlchemy
+requests
+boto3
+boto
+aws-xray-sdk

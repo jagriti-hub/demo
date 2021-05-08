@@ -1,0 +1,16 @@
+- name: Step {{stepno}} - {{stepname}} - Task 9-1 - parsesecondarykey1 - parse secondarykey with sort key
+  copy:
+    content: |
+      {{tablesecondarykey.tableprefix}}_secondarykey = "{{tablesecondarykey.secondarykey}}"
+    dest: "/tmp/{{apiname}}/dbconf/{{tablesecondarykey.tableprefix}}-secondarykey.py"
+  when: tablesecondarykey.secondarysortkeyexist is false
+  register: parsesecondarrykeys1
+- name: Step {{stepno}} - {{stepname}} - Task 9-2 - parsesecondarykey2 - parse secondarykey without sort key
+  copy:
+    content: |
+      {{tablesecondarykey.tableprefix}}_secondarykey = "{{tablesecondarykey.secondarykey}}"
+      {{tablesecondarykey.tableprefix}}_secondarysortkey = "{{tablesecondarykey.secondarysortkey}}"
+    dest: "/tmp/{{apiname}}/dbconf/{{tablesecondarykey.tableprefix}}-secondarykey.py"
+  when: tablesecondarykey.secondarysortkeyexist is true
+  register: parsesecondarrykeys2
+      

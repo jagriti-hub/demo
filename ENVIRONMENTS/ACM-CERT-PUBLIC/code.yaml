@@ -1,0 +1,85 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: Environment deploy a acm-certificate that you can use to enable secure connections
+
+Metadata:
+  Architecture:
+    - Title: ACM-CERTIFICATE
+      Image: image1
+      Description: Architecture for acm-certificate
+
+Parameters:
+  DomainName:
+    Description: The fully qualified domain name (FQDN) which you have created in public-subdomain
+    Type: String
+  
+  HostedZoneId:
+    Description: Provide hostedzone Id which you have created in public-subdomain 
+    Type: String
+    
+  Prefixdomain:
+    Description: Provide prefix that will be prefixed to domain name 
+    Type: String
+    Default: '*'
+    
+Resources:
+  Create:
+    Metadata:
+     Description: This Python Resource  will create the certificate in ACM.
+    Type: boto3::acm::request_certificate
+    Code: |
+      acm_client = boto3.client('acm')
+      request_certificate_fnc = acm_client.request_certificate(
+        DomainName=Input["Prefixdomain"]+"."+Input["DomainName"],
+        ValidationMethod='DNS'
+      )
+      CertificateARN= request_certificate_fnc["CertificateArn"]
+      
+      Outputs=[
+        {
+          "OutputKey": "CertificateARN",
+          "OutputValue": CertificateARN
+        },
+      ]
+      OP={
+          "Outputs":Outputs,
+          "State":"Created"
+        }
+    
+  Describe:
+    Type: boto::acm::request_certificate
+    Metadata:
+      Description: This Python Function will Create the customDomain
+    Code: |
+      OP={
+          "State":"Running"
+      }
+  
+  Update:
+    Type: boto::acm::request_certificate
+    Metadata:
+      Description: This Python Function will Create the customDomain
+    Code: |
+      OP={
+        "State":"completed"
+      }
+  Delete:
+    Type: boto::acm::request_certificate
+    Metadata:
+      Description: This Python Function will Create the customDomain
+    Code: |
+      acm_client = boto3.client('acm')
+      
+      for item in Outputs:
+        if item["OutputKey"] == "CertificateARN":
+          CertificateARN = item["OutputValue"]
+      
+      delete_certificate_fnc = acm_client.delete_certificate( CertificateArn = CertificateARN )
+      OP={
+          "State":"Deleted"
+      }
+      
+Outputs:
+  CertificateARN:
+    Description: Certificate ARN
+    

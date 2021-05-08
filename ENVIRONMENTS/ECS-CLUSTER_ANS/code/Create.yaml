@@ -1,0 +1,35 @@
+---
+- name: "Create Code Repo for the Archeplay Template"
+  hosts: localhost
+  become: true
+  tasks:
+  - block:
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: cluster
+          stepdesc: ECS Cluster Creation
+          stepno: 1
+          stepaction: create
+          
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Running
+    rescue:
+      - name: Execute rollback Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: cluster
+          stepdesc: Create Code Commit Repository
+          stepno: 1
+          stepaction: rollback
+      
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Failed

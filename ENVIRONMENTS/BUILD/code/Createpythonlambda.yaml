@@ -1,0 +1,12 @@
+---
+- name: Execute python lambda
+  block:
+    - name: Execute Step
+      include_role:
+        name: executestep
+      vars:
+        stepname: pythonlambda
+        stepdesc: Build Python Code Package to Deploy
+        stepno: 2
+        stepaction: build
+      when: AppType == "pythonlambda"

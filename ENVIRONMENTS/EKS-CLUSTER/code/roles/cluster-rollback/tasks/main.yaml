@@ -1,0 +1,28 @@
+---
+- name: Step {{stepno}} - {{stepname}} - Executing
+  block:
+    - name: Step {{stepno}} - {{stepname}} - Task 1 - Delete eks cluster stack
+      community.aws.ecs_cluster:
+        name: "eksctl-{{ClusterName}}-cluster"
+        region: "{{apenvironment.region}}"
+        state: absent
+      register: clusterdelete
+    
+    - name:  Step {{stepno}} - {{stepname}} - Task 2 - deletepolicy - Delete Lb ingress policy from template
+      community.aws.iam_managed_policy:
+        policy_name: "ingress-controller"
+        state: absent
+      register: deletepolicy
+      
+    - name: Step {{stepno}} - {{stepname}}  - Task 6 - Register the outputs
+      set_fact:
+        update_output: "false"
+        outputs: []
+  rescue:
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed

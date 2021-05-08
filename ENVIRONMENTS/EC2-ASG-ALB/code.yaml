@@ -1,0 +1,379 @@
+---
+Description:  This template deploys a Product API using Lauch Template with AutoScaling Group and the ApplicationLoadBalancer
+
+Metadata:
+  Architecture:
+    - Title: PRODUCT REST API
+      Image: productapiasg-productapiasg
+      Description: Product API with ASG
+    
+    - Title: Deployment Sequence
+      Image: environment-deployment-sequence
+      Description: Sequence of environment deployment for e-commerce application
+
+Parameters:
+  LoadBalancerHealthCheckIntervalSeconds:
+    Description: Interval at which HealthCheck is monitored
+    Type: Number
+    Default: 10
+  
+  InstancePort:
+    Description: InstancePort at which HealthCheck is monitored. Should be value from 1 to 65535
+    Type: Number
+    Default: 80
+
+  InstanceProtocol:
+    Description: Instance protocol at which HealthCheck is monitored
+    Type: String
+    Default: HTTP
+
+  LoadBalancerHealthCheckTimeoutSeconds:
+    Description: Timeout for the HealthCheck monitoring. Member must have value less than or equal to 120 and must be smaller than the interval
+    Type: Number
+    Default: 5
+  
+  LoadBalancerHealthyThresholdCount:
+    Description: Healthy Threshold Count for LoadBalancer for health check monitoring.
+    Type: Number
+    Default: 3
+  
+  LoadBalancerUnhealthyThresholdCount:
+    Description: UnHealthy Threshold Count for LoadBalancer for health check monitoring.
+    Type: Number
+    Default: 3
+    
+  MinSizeASGs:
+    Description: Minimum number of instances to be launched in EC2 AutoScaling.
+    Type: Number
+    Default: 2
+    
+  DesiredCapacityASG:
+    Description: Desired number of instances to be launched in EC2 AutoScaling.
+    Type: Number
+    Default: 2
+  
+  MaxSizeASGs:
+    Description: Maximum number of instances to be launched in EC2 AutoScaling.
+    Type: Number
+    Default: 3
+
+  AutoscalingTargetValue:
+    Description: CPU Utilization percentage on which AutoScaling is triggered.
+    Type: Number
+    Default: 70
+  
+  ASGCoolDown:
+    Description: ASG will wait for cooldown seconds before scaling down the instances.
+    Type: Number
+    Default: 300
+  
+  EstimatedInstanceWarmup:
+    Description: EstimatedInstanceWarmup for EC2 instances when scale up
+    Type: Number
+    Default: 60
+  
+  EmailAddress:
+    Description: When EC2 uses max of Avg CPU utilisation, AutoScalingGroup launches the EC2 and an email is sent EC2 Scaling.
+    Type: String
+    Default: example@example.com
+  
+  InstanceType:
+    Description: Type EC2 instance to lauch.
+    Type: String
+    Default: t3a.medium
+    AllowedValues: 
+      - t3.micro
+      - t3a.medium
+
+  KeyName:
+    Description: Existing EC2 KeyPair to enable SSH access to the instance
+    Type: String
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  
+  VPCID:
+    Description: VPC ID on which EC2 is running. This value comes from the Dependent Environment VPC
+    Type: String
+  
+  PrivateSubnet1ID:
+    Description: First Private subnet ID on which EC2 is running. This value comes from the Dependent Environment VPC
+    Type: String
+  
+  PrivateSubnet2ID:
+    Description: Second Private subnet ID on which EC2 is running. This value comes from the Dependent Environment VPC
+    Type: String
+  
+  DynamodbPolicyRW:
+    Description: Dynamodb's Read Write Policy of Product API. This value comes from the Dependent Environment PRODUCT-DB-DYNDB
+    Type: CommaDelimitedList
+  
+  AMIId:
+    Description: AMI Id from image build
+    Type: String
+  
+  apiname:
+    Description: apiname for ec2 asg
+    Type: String
+  
+Resources:
+  ASGALBRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      Description: IAM Role for the PRODUCT API EC2 AutoScaling Group in which Dynamodb Read Write Policies are attached.
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ec2.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      ManagedPolicyArns: 
+        Ref: DynamodbPolicyRW
+      RoleName:
+        Fn::Sub: ${AWS::StackName}-Role
+      Policies:
+        - PolicyName:
+            Fn::Sub: ${apiname}-amiinstancerole-xraycw
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - xray:*
+                  - logs:*
+                Resource: "*"
+  
+  ASGALBPublicInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Metadata:
+      Description: IAM Role for the EC2 in the autoscaling group.
+    Properties:
+      Roles: 
+        - Ref: ASGALBRole
+ 
+  ASGALBPublicSNSTopic:
+    Type: AWS::SNS::Topic
+    Metadata:
+      Description: SNS Topic for the AutoScalingGroup's EC2 instances when there is status change in EC2 instances.
+    Properties:
+      TopicName:
+        Fn::Sub: ${AWS::StackName}-Public
+      Subscription:
+        - Protocol: email
+          Endpoint: 
+            Ref: EmailAddress
+
+  ProductSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      Description: SecurityGroup for the Product API with access only from the load balancer's security group.
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId:
+        Ref: VPCID
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort:
+          Ref: InstancePort
+        ToPort:
+          Ref: InstancePort
+        CidrIp: 0.0.0.0/0
+          
+          #Add ingress rule and referece RDS SG of 3306
+
+  ApplicationLoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Metadata:
+      Description: An Application LoadBalancer deployed on a public subnet which can route traffic to public subnets.
+    Properties: 
+      Name: 
+        Fn::Sub: "${AWS::StackName}"
+      Scheme: internal
+      Subnets: 
+        - 
+          Ref: PrivateSubnet1ID
+        - 
+          Ref: PrivateSubnet2ID
+      Type: network
+      Tags: 
+        - Key: Name
+          Value: 
+            Fn::Sub: "${AWS::StackName}"
+      
+
+  ApplicationLoadBalancerTargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Metadata:
+      Description: Application LoadBalancer's TargetGroup where the ECS containers are added with instance health checks.
+    Properties:
+      HealthCheckEnabled: True
+      Name:
+        Fn::Sub: "${AWS::StackName}-TG"
+      Port: 80
+      Protocol: TCP
+      VpcId:
+        Ref: VPCID
+      HealthCheckIntervalSeconds:
+        Ref: LoadBalancerHealthCheckIntervalSeconds
+      HealthCheckProtocol: TCP
+      HealthCheckPort: 80
+      HealthyThresholdCount:
+        Ref: LoadBalancerHealthyThresholdCount
+      UnhealthyThresholdCount:
+        Ref: LoadBalancerUnhealthyThresholdCount
+      Tags: 
+        - Key: Name
+          Value: 
+            Fn::Sub: "${AWS::StackName}-TG"
+      TargetType: instance
+
+  ApplicationLoadBalancerListener:  
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Metadata:
+      Description: An Application LoadBalancer's Listener with https protocol and TLS Certificate.
+    Properties: 
+      DefaultActions: 
+        - 
+          TargetGroupArn:
+            Ref: ApplicationLoadBalancerTargetGroup
+          Type: forward
+      LoadBalancerArn:
+        Ref: ApplicationLoadBalancer
+      Protocol: TCP
+      Port: 80
+  
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Metadata:
+      Description: LaunchTemplate for the EC2 instances for the AutoScaling Group of the Product. Product Service will be installed here.
+    Properties:
+      LaunchTemplateData:
+        InstanceType:
+          Ref: InstanceType
+        DisableApiTermination: 'true'
+        KeyName: 
+          Ref: KeyName
+        ImageId:
+          Ref: AMIId
+        SecurityGroupIds:
+          - Ref: ProductSecurityGroup
+        IamInstanceProfile:
+          Name:
+            Ref: ASGALBPublicInstanceProfile
+      LaunchTemplateName: 
+        Fn::Sub: "${AWS::StackName}-LaunchTemplate"
+
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Metadata:
+      Description: AutoScaling Group of the Product Service.
+    Properties:
+      AutoScalingGroupName: 
+        Fn::Sub: "${AWS::StackName}-AutoscalingGroup"
+      Cooldown:
+        Ref: ASGCoolDown
+      DesiredCapacity:
+        Ref: DesiredCapacityASG
+      LaunchTemplate: 
+        LaunchTemplateId: 
+          Ref: LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MaxSize:
+        Ref: MaxSizeASGs
+      MinSize:
+        Ref: MinSizeASGs
+      Tags:
+        - 
+          Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName}-AutoscalingGroup"
+          PropagateAtLaunch: 'true'
+      VPCZoneIdentifier: 
+        -
+          Ref: PrivateSubnet1ID
+        - 
+          Ref: PrivateSubnet2ID
+      TargetGroupARNs:
+        - 
+          Ref: ApplicationLoadBalancerTargetGroup
+      
+      NotificationConfigurations: 
+        - NotificationTypes: 
+            - autoscaling:EC2_INSTANCE_LAUNCH
+            - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
+            - autoscaling:EC2_INSTANCE_TERMINATE
+            - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
+          TopicARN:
+            Ref: ASGALBPublicSNSTopic
+
+  AutoScalingGroupPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Metadata:
+      Description: AutoScaling Group Policy with the Average CPU Utilization to scale up or scale down
+    Properties: 
+      AdjustmentType: ChangeInCapacity
+      Cooldown:
+        Ref: ASGCoolDown
+      EstimatedInstanceWarmup:
+        Ref: EstimatedInstanceWarmup
+      AutoScalingGroupName:
+        Ref: AutoScalingGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration: 
+          DisableScaleIn: False
+          PredefinedMetricSpecification:
+             PredefinedMetricType: ASGAverageCPUUtilization
+          TargetValue:
+            Ref: AutoscalingTargetValue
+  
+  
+  # APIPolicyRW:
+  #   Type: 'AWS::IAM::ManagedPolicy'
+  #   DependsOn: ApiGatewayRestApi
+  #   Metadata:
+  #     Description: Policy for Full access of this APIGATEWAY which can be attached to any Role as per users need for 
+  #       accessing this api.
+  #   Properties:
+  #     ManagedPolicyName: 
+  #       Fn::Sub: "${AWS::StackName}-RW" 
+  #     PolicyDocument:
+  #       Version: 2012-10-17
+  #       Statement:
+  #         - 
+  #           Effect: Allow
+  #           Action:
+  #             - "apigateway:*"
+  #           Resource: 
+  #             Fn::Sub: 'arn:aws:apigateway:${AWS::Region}::/restapis/${ApiGatewayRestApi}/*'
+  
+Outputs:
+  
+  LoadBalancerDNS:
+    Description: DNS Load Balancer Name
+    Value:
+      Ref: ApplicationLoadBalancer
+  
+  LoadBalancerDNSName:
+    Description: DNS Load Balancer Name
+    Value:
+      Fn::Join:
+        - ""
+        - 
+          - "http://"
+          - 
+            Fn::GetAtt:
+              - ApplicationLoadBalancer
+              - DNSName
+  
+  # APIPolicyRW:
+  #   Description: Policy arn for accessing s3 bucket with full access permission.
+  #   Value:
+  #     Ref: APIPolicyRW
+  
+  AWSRegion:
+    Description: Region of this Env deployed.
+    Value:
+      Fn::Sub: ${AWS::Region}
+  

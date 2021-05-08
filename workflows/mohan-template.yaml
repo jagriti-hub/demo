@@ -1,0 +1,29 @@
+---
+DeployInfra:
+  AccountId: 865927642493
+  Region: us-east-1
+TemplateInfra:
+  AccountId: 865927642493
+  EmailId: mohan@archeplay.com
+  Region: us-east-1
+  TenantId: Tenant-01
+  ProjectId: Project-01
+  templaterepo: mohan-test-env-bucket
+  templateinfraregion: us-east-1
+  triggerlambda: arn:aws:lambda:us-east-1:280111790906:function:mytrigger
+  apikey: abcdefghioppp
+  apisecret: zaasdfghjkuytfvbhgvbhgv
+Environmenthome: /home/ec2-user/environment/newtemplatetest
+deploymentversion: v1
+listoftemplates:
+  - templateid: PROJECT-BASE
+    templatedeploymentid: d1
+    parametername: default
+    dependenttemplate: []
+  - templateid: API-PYTHON-FLASK-EC2
+    templatedeploymentid: d2
+    parametername: default
+    dependenttemplate:
+      - name: PROJECT-BASE
+        templatedeploymentid: tmp-a00001
+        DepTempId: d1

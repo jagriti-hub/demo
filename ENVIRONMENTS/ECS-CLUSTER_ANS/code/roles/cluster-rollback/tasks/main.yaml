@@ -1,0 +1,37 @@
+---
+- name: "Step {{stepno}} - {{stepname}} - Executing"
+  block:
+    
+    - name: Task 1 - createpolicy - Delete ecs execution policy
+      community.aws.iam_policy:
+        iam_type: role
+        iam_name: "{{apiname}}-ecstaskexecrole"
+        policy_name: "{{apiname}}-ecstaskpullimage"
+        state: absent
+      when: createcstaskpullimagepolicy is defined
+    
+    - name: Task 2 - createrole - Delete a role with ecs execution access
+      community.aws.iam_role:
+        name: "{{apiname}}-ecstaskexecrole"
+        state: absent
+      when: createecstaskexecrole is defined
+    
+    - name: Task 3 - ECS Cluster creation
+      community.aws.ecs_cluster:
+        name: "{{apiname}}-ecscluster"
+        region: "{{apenvironment.region}}"
+        state: absent
+      when: cluster is defined
+    
+    - name: Task 4 - Stack outputs - Register the outputs
+      set_fact:
+        update_output: "False"
+        outputs: []
+  rescue:
+    - name: "Step {{stepno}} - {{stepname}} - Faiure Message Registering"
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  "Step {{stepno}} - {{stepname}}  is failed"

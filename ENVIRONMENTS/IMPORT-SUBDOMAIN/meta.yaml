@@ -1,0 +1,30 @@
+---
+ServiceId: IMPORT-SUBDOMAIN
+ServiceType: python
+EnvironmentType: Aws
+DependentEnvironments: '[]'
+ParameterOptions:
+  - GetTemplate: DomainName
+    ParameterKey: DomainName
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/importsubdomain.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: IMPORT-SUBDOMAIN
+EnvironmentName: Deploy a import subdomain in route53
+Description: This will deploy a import subdomain
+EnvironmentDocs: docs/importsubdomain.html
+EnvironmentGroup: ProjectEnvironments
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - Create
+    - Describe
+  Delete:
+    - Delete
+    - Describe
+CreditsPerHour: 0
+Limits:
+  - create a import subdomain in route53

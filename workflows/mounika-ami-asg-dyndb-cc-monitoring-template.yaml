@@ -1,0 +1,54 @@
+---
+workflows:
+  WorkflowId: WF-d112496f
+  WorkflowName: amicbdynamodbflow
+  Environments:
+  
+  - Name: IMAGEBUILD-AMI-CODECOMMIT
+    parameters: packer
+    deploymentid: 1124971
+    dependentenv:
+      - name: VPC
+        deploymentid: 1124961
+      - name: CODE-COMMIT
+        deploymentid: 1124962
+  # - Name: DYNAMODB
+  #   parameters: default
+  #   deploymentid: 1124972
+  #   dependentenv: []
+  
+  # - Name: S3-DATA-BUCKET
+  #   parameters: default
+  #   deploymentid: 1124973
+  #   dependentenv: []
+  
+  # - Name: DYNAMODB-DATAPUSH-S3
+  #   parameters: default
+  #   deploymentid: 1124974
+  #   dependentenv:
+  #     - name: VPC
+  #       deploymentid: 1124961
+  #     - name: KEYPAIR
+  #       deploymentid: 1124964
+  #     - name: DYNAMODB
+  #       deploymentid: 1124972
+  #     - name: S3-DATA-BUCKET
+  #       deploymentid: 1124973
+  
+  
+  # - Name: API-ASG-ALB-DYNDB
+  #   parameters: default
+  #   deploymentid: 1124975
+  #   dependentenv:
+  #     - name: VPC
+  #       deploymentid: 1124961
+  #     - name: KEYPAIR
+  #       deploymentid: 1124964
+  #     - name: IMAGEBUILD-AMI-CODECOMMIT
+  #       deploymentid: 1124971
+  #     - name: DYNAMODB
+  #       deploymentid: 1124972
+  #     - name: PUBLIC-SUBDOMAIN
+  #       deploymentid: 1124967
+  #     - name: ACM-CERT-PUBLIC
+  #       deploymentid: 1124968

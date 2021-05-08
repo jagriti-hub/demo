@@ -1,0 +1,37 @@
+---
+- name: load the parameter file
+  include_vars: 
+    file: "{{deploymentfolder}}/parameter.json"
+    name: envparameter
+- name: Load action.yaml file for  the environment
+  template:
+    src: "{{envsourcefolder}}/action.yaml"
+    dest: "{{deploymentfolder}}/action.yaml"
+- name: Load action.yaml as a variable
+  include_vars:
+    file: "{{deploymentfolder}}/action.yaml"
+    name: actiontemplate
+- name: Check that the Output.json exists
+  stat:
+    path: "{{deploymentfolder}}/output.json"
+  register: stat_result
+
+- name: Create a output.json if not exist
+  copy:
+    content: "{}"
+    dest: "{{deploymentfolder}}/output.json"
+  when: not stat_result.stat.exists
+
+- name: setting variables for Create Code
+  set_fact:
+    outputfile: "{{deploymentfolder}}/output.json"
+
+- name: Generate Action Python file 
+  template:
+    src: "archeplayaction.j2"
+    dest: "{{deploymentfolder}}/{{action}}.py"
+
+- name: Execute create python file
+  script: "{{deploymentfolder}}/{{action}}.py"
+  args:
+    executable: python3

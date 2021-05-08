@@ -1,0 +1,57 @@
+---
+- name: "Create DynamoDB Table"
+  hosts: localhost
+  become: true
+  tasks:
+  - block:
+      - debug:
+          var: apenvironment
+      - set_fact:
+          db: "{{ lookup('vars', 'db' )}}"
+          bucketname: "{{ ap.templaterepo }}"
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: table
+          stepdesc: Creating DynamoDB Tables
+          stepno: 1
+          stepaction: create
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: secondarykey
+          stepdesc: Creating DynamoDB Tables
+          stepno: 2
+          stepaction: create
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: datapush
+          stepdesc: Put items into DynamoDB Table
+          stepno: 3
+          stepaction: create
+      
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Running
+    rescue:
+      - name: Execute rollback Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: table
+          stepdesc: Delete Table
+          stepno: 1
+          stepaction: rollback
+      
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Failed
+      

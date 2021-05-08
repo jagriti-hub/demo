@@ -1,0 +1,13 @@
+---
+- name: "Create DynamoDB Table"
+  hosts: localhost
+  become: true
+  tasks:
+    - name: Execute Step
+      include_role:
+        name: executestep
+      vars:
+        stepname: table
+        stepdesc: Updating DynamoDB Tables
+        stepno: 1
+    

@@ -1,0 +1,29 @@
+---
+workflows:
+  WorkflowId: wf-012347
+  WorkflowName: ecommercewebworkflow
+  Environments:
+  - Name: E-COMMERCE-WEB
+    parameters: default
+    deploymentid: 012340
+    dependentenv:
+    - name: PUBLIC-SUBDOMAIN
+      deploymentid: XXXXX
+    - name: ACM-CERT-PUBLIC
+      deploymentid: XXXXX
+  - Name: E-COMMERCE-CODE-PUSH
+    parameters: default
+    deploymentid: 012341
+    dependentenv: []
+  - Name: EC-CODE-PUSH-START
+    parameters: default
+    deploymentid: 123452
+    dependentenv:
+    - name: CART-API-ECS
+      deploymentid: 123451
+    - name: PRODUCT-API-ASG
+      deploymentid: 123457
+    - name: E-COMMERCE-CODE-PUSH
+      deploymentid: 012341
+    - name: E-COMMERCE-WEB
+      deploymentid: 012340

@@ -1,0 +1,131 @@
+Description: Python Code for creating, Describing and Deleting the EC2 keypair.
+Metadata:
+  Architecture:
+    - Title: API-GATEWAY-CUSTOM-DOMAIN
+      Image: API-GATEWAY-CUSTOM-DOMAIN
+      Description: Architecture for API-GATEWAY-CUSTOM-DOMAIN
+
+Parameters:
+  DomainName:
+    Description: DomainName from PublicSubdomain
+    Type: String
+  
+  ACMCertificate:
+    Description: ACM Certificate from ACM-CERT-PUBLIC
+    Type: String
+  
+  APIDomainName:
+    Type: String
+    Description: DomainName for the API from user input
+
+Resources:
+  Create:
+    Type: boto::ApiGateway::create_domain_name
+    Metadata:
+      Description: This Python Function will Create the customDomain
+    Code: |
+      apigw_client = connection.client('apigateway')
+      try:
+        print(Input['APIDomainName'])
+        print(Input['DomainName'])
+        print(Input['ACMCertificate'])
+        response = apigw_client.create_domain_name(domainName = Input['APIDomainName'] + "." + Input['DomainName'],certificateArn = Input['ACMCertificate'],securityPolicy = "TLS_1_2")
+        domain_name = response['domainName']
+        endpoint_domain = response['distributionDomainName']
+        endpoint_hzid = response['distributionHostedZoneId']
+        route = connection.client("route53")
+        response = route.change_resource_record_sets(
+          HostedZoneId= Input['HostedZoneId'],
+          ChangeBatch={
+            'Changes': [
+              {
+                'Action': 'CREATE',
+                'ResourceRecordSet': {
+                  'Type': 'A',
+                  'Name': Input['APIDomainName']+"."+Input['DomainName'],
+                  'AliasTarget': {
+                    'HostedZoneId': endpoint_hzid,
+                    'DNSName': endpoint_domain,
+                    'EvaluateTargetHealth': False
+                    },
+                  }
+                },
+              ]
+            }
+          )
+        Outputs=[
+          {
+            "OutputKey": "DomainName",
+            "OutputValue": Input['APIDomainName']+"."+Input['DomainName']
+          },
+          {
+            "OutputKey": "endpoint_domain",
+            "OutputValue": endpoint_domain
+          },
+          {
+            "OutputKey": "endpoint_hzid",
+            "OutputValue": endpoint_hzid
+          }
+        ]
+        OP={
+          "Outputs":Outputs,
+          "State":"Created"
+          }
+      except:
+        print("DomainName Already Exists")
+        OP={
+          "State":"completed"
+          }
+  Delete: 
+    Type: boto::ApiGateway::delete_domain_name
+    Metadata:
+      Description: This Python Function will Delete the Ec2 Keypair
+    Code: |
+      apigw_client = connection.client('apigateway')
+      route = connection.client("route53")
+      for item in Outputs:
+        if item["OutputKey"] == "endpoint_domain":
+          endpoint_domain = item["OutputValue"]
+        if item["OutputKey"] == "endpoint_hzid":
+          endpoint_hzid = item["OutputValue"]
+      response = route.change_resource_record_sets(
+        HostedZoneId= Input['HostedZoneId'],
+        ChangeBatch={
+            'Changes': [
+                {
+                  'Action': 'DELETE',
+                  'ResourceRecordSet': {
+                      'Type': 'A',
+                      'Name': Input['APIDomainName']+"."+Input['DomainName'],
+                      'AliasTarget': {
+                          'HostedZoneId': endpoint_hzid,
+                          'DNSName': endpoint_domain,
+                          'EvaluateTargetHealth': False
+                          },
+                      }
+                  },
+                  ]
+                }
+            )
+      response = response = apigw_client.delete_domain_name( domainName=Input['APIDomainName']+"."+Input['DomainName'] )
+      OP={
+          "State":"Deleted"
+          }
+  Describe: 
+    Type: boto::ec2::get_domain_name
+    Metadata:
+      Description: This Python Function will Describe the Ec2 Keypair
+    Code: |
+      apigw_client = connection.client('apigateway')
+      response = apigw_client.get_domain_name( domainName=Input['APIDomainName']+"."+Input['DomainName'] )  
+      op={
+        "OutputKey":"DomainName",
+        "OutputValue":response['domainName']
+        }
+      OP={
+        "Outputs":Outputs,
+        "State":"Running"
+        }
+Outputs:
+  DomainName: 
+    Description: Name of the custom domain which got created

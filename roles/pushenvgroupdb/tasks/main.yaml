@@ -1,0 +1,63 @@
+---
+- debug:
+    var: EnvironmentName
+- debug:
+    var: item
+- debug:
+    var: Environmenthome
+- name: Set the Folder code push execution
+  set_fact:
+    deploymentfolder: "{{Environmenthome}}/workfolder/"
+- name: Create a the deployment folder
+  file:
+    path: "{{deploymentfolder}}"
+    state: directory
+    mode: '0755'
+- name: Create a the envscriptsexec folder
+  file:
+    path: "{{deploymentfolder}}/envscriptsexec"
+    state: directory
+    mode: '0755'
+- name: Create a the dbinputs folder
+  file:
+    path: "{{deploymentfolder}}/envscriptsexec/dbinputs"
+    state: directory
+    mode: '0755'
+- name: Loading Group List File
+  include_vars:
+    file: "{{Environmenthome}}/pushenvgroup/{{envlist}}.yaml"
+    name: envpush
+
+- name: Create Service Json
+  copy:
+    dest: "{{Environmenthome}}/workfolder/envscriptsexec/dbinputs/{{item.envgroup}}.json"
+    content:
+      EnvironmentType: Aws
+      EnvironmentGroup: "{{item.envgroup}}"
+      EnvironmentOrder: "{{item.order}}"
+  with_items: "{{envpush.listofenvgroups}}"
+
+- name: Setting the Table name and file name for Service
+  set_fact:
+    datafile: "{{Environmenthome}}/workfolder/envscriptsexec/dbinputs/{{item.envgroup}}.json"
+    tablename: "{{environmenttablename}}"
+
+- name: Create DB env push script
+  template:
+    src: archeplay.j2
+    dest: "{{Environmenthome}}/workfolder/envscriptsexec/dbinputs/{{item.envgroup}}.py"
+
+- name: push environment envgroup to DB Code Execution
+  script: "{{Environmenthome}}/workfolder/envscriptsexec/dbinputs/{{item.envgroup}}.py"
+  args:
+    executable: python3
+
+- name: Remove Environment DB Push code file
+  file: 
+    name: "{{Environmenthome}}/workfolder/envscriptsexec/dbinputs/{{item.envgroup}}.py"
+    state: absent
+
+- name: Remove Environment DB Push Json file
+  file: 
+    name: "{{Environmenthome}}/workfolder/envscriptsexec/dbinputs/{{item.envgroup}}.json"
+    state: absent

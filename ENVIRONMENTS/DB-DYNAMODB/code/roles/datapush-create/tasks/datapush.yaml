@@ -1,0 +1,5 @@
+- name: Step {{stepno}} - {{stepname}} - Task 1 - datapush-{{table.tablename}} -  Put item in DynamoDB Table
+  script: datapush.py "{{table}}" "{{apenvironment.region}}" "{{bucketname}}" 
+  args:
+    executable: python3
+  register: datapush

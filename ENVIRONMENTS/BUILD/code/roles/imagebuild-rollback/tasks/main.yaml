@@ -1,0 +1,92 @@
+---
+- name: Task 1 - image build rollback
+  block:
+    - name: Task 1 - Delete the instance
+      community.aws.ec2_instance:
+        instance_ids: "{{item.instance_id}}"
+        region: "{{apenvironment.region}}"
+        state: terminated
+        wait: yes
+      loop: "{{ createinstance.instances }}"
+      when: createinstance is defined
+    - name: Task 2 - Delete Security Group
+      amazon.aws.ec2_group:
+        name: "{{apiname}}-amisg"
+        region: "{{apenvironment.region}}"
+        state: absent
+      when: createsg is defined
+    - name: Task 3 - Delete EC2 key Pair
+      ec2_key:
+        name: "{{apiname}}-amikey"
+        region: "{{apenvironment.region}}"
+        state: absent
+      when: createkeypair is defined
+    
+    - name: Task 4 - createmachine-createpolicy - Create S3 policy from template
+      community.aws.iam_policy:
+        iam_type: role
+        iam_name: "{{apiname}}-amiinstancerole"
+        policy_name: "{{apiname}}-pkgrepopolicy"
+        state: absent
+      when: createpolicy is defined
+    
+    - name: Task 5 - Delete the Ec2 Role
+      community.aws.iam_role:
+        name: "{{apiname}}-amiinstancerole"
+        region: "{{apenvironment.region}}"
+        delete_instance_profile: yes
+        state: absent
+      when: createrole is defined
+    
+    - name: Task 6 - createmachine-createpolicyxray - Create xray policy from template
+      community.aws.iam_policy:
+        iam_type: role
+        iam_name: "{{apiname}}-amiinstancerole-xray"
+        policy_name: "{{apiname}}-xraypolicy"
+        state: absent
+      when: createpolicyxray is defined
+    
+    - name: Task 7 - Delete the Ec2 Role for xray
+      community.aws.iam_role:
+        name: "{{apiname}}-amiinstancerole-xray"
+        region: "{{apenvironment.region}}"
+        delete_instance_profile: yes
+        state: absent
+      when: createrolexray is defined
+      
+    - name: Task 8 - createmachine-createpolicyxray - Create cw policy from template
+      community.aws.iam_policy:
+        iam_type: role
+        iam_name: "{{apiname}}-amiinstancerole-cw"
+        policy_name: "{{apiname}}-cwpolicy"
+        state: absent
+      when: createpolicycw is defined
+    
+    - name: Task 9 - Delete the Ec2 Role for cw
+      community.aws.iam_role:
+        name: "{{apiname}}-amiinstancerole-cw"
+        region: "{{apenvironment.region}}"
+        delete_instance_profile: yes
+        state: absent
+      when: createrolecw is defined
+    
+    - name: Step {{stepno}} - {{stepname}}  - Task 10 - Register the outputs
+      set_fact:
+        update_output: "false"
+        outputs: []
+  rescue:
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+      register: failedmsg
+      when: ansible_failed_result.msg and ansible_failed_result.stderr is defined
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedmessage: "{{ansible_failed_result.msg}}"
+      when: failedmsg is skipped
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed

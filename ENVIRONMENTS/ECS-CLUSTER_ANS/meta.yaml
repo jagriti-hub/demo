@@ -1,0 +1,29 @@
+---
+ServiceId: ECS-CLUSTER
+ServiceType: ansible
+EnvironmentType: Aws
+DependentEnvironments: '[]'
+ParameterOptions: '[]'
+OutputOptions: '[]'
+Input:
+  Templatekey: Ansible/ecscluster.zip
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: ECS-CLUSTER
+EnvironmentName: Deploys an ECS Cluster.
+Description: This template deploys an ECS Cluster.
+EnvironmentDocs: docs/ecscluster.html
+EnvironmentGroup: ProjectEnvironments
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - Build
+    # - DescribeStack
+  Delete:
+    - Build
+    # - DescribeStack
+CreditsPerHour: 0
+Limits:
+  - One ECS cluster
+

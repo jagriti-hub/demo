@@ -1,0 +1,51 @@
+- name: "{{templateid}}-TemplateStep 2 - Set  Template Folder varaible"
+  set_fact:
+    templatedeploymentfolder: "{{Environmenthome}}/workfolder/{{templatedeploymentid}}"
+    templatesourcefolder: "{{Environmenthome}}/TEMPLATES/{{templateid}}"
+- debug:
+    var: templatedeploymentfolder
+- debug:
+    var: templatesourcefolder
+
+- name: "{{templateid}}-TemplateStep 3 - Load the Template Meta"
+  include_vars:
+    file: "{{templatesourcefolder}}/meta.yaml"
+    name: templatemeta
+
+- debug:
+    var: templatemeta
+
+- name: "{{templateid}}-TemplateStep 4 - Load the Template Parameter"
+  template:
+    src: "{{Environmenthome}}/TEMPLATES/{{templateid}}/parameters/{{parametername}}/parameter.j2"
+    dest: "{{templatedeploymentfolder}}/parameter.yaml"
+- debug:
+    var: Environment
+
+- name: Delete the Environment for the Given Template
+  include_role: 
+    name: delete-environment
+  vars:
+    apenvironment:
+      deploymentid: "{{Environment.DeployId}}"
+      region: "{{DeployInfra.Region}}"
+      version: "{{deploymentversion}}"
+      Action: "{{deploymentaction}}"
+    ap:
+      templateid: "{{ templatemeta.TemplateId }}"
+      tenantid: "{{ TemplateInfra.TenantId }}"
+      projectid: "{{ TemplateInfra.ProjectId }}"
+      apikey: "{{ TemplateInfra.apikey }}"
+      apisecret: "{{ TemplateInfra.apisecret }}"
+      triggerlambda: "{{ TemplateInfra.triggerlambda }}"
+      templaterepo: "{{ TemplateInfra.templaterepo }}"
+      templateinfraregion: "{{ TemplateInfra.Region }}"
+    ParameterFile: "{{templatesourcefolder}}/{{Environment.DeployId}}.j2"
+    OutputParameterFile: "{{templatesourcefolder}}/{{Environment.DeployId}}-output.j2"
+    EnvironmentId: "{{Environment.EnvironmentId}}"
+    dependentenv: "{{Environment.dependentenv}}"
+  loop: 
+    "{{templatemeta.Environments | reverse}}"
+  loop_control:
+    loop_var: Environment
+  when: deploymentaction == "Delete"

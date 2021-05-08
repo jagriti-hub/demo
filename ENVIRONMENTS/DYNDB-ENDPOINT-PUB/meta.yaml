@@ -1,0 +1,41 @@
+---
+ServiceId: DYNAMODB-ENDPOINT-PUBLIC
+ServiceType: awscf
+EnvironmentType: Aws
+DependentEnvironments:
+  - VPC
+ParameterOptions:
+  - GetEnvironment: VPC
+    GetOutputKey: VPCID
+    ParameterKey: VPCID
+    
+  - GetEnvironment: VPC
+    GetOutputKey: PublicRouteTableId
+    ParameterKey: RouteTableId
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/dynamodbendpointpublic.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: DYNAMODB-ENDPOINT-PUBLIC
+EnvironmentName: Deploys Dynamodb Endpoint in public network.
+Description: This template deploys Dynamodb Endpoint in public network.
+EnvironmentDocs: docs/dynamodbendpointpublic.html
+EnvironmentGroup: ProjectEnvironments
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - CreateStack
+    - DescribeStack
+  Update:
+    - UpdateStack
+    - DescribeStack
+  Delete:
+    - DeleteStack
+    - DescribeStack
+CreditsPerHour: 0
+Limits:
+  - Private Access to DYNAMODB API from the VPC
+ 
+

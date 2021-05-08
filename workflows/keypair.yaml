@@ -1,0 +1,9 @@
+---
+workflows:
+  WorkflowId: wf-012345
+  WorkflowName: productworkflow
+  Environments:
+  - Name: KEYPAIR
+    parameters: default
+    deploymentid: a012346
+    dependentenv: []

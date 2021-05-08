@@ -1,0 +1,18 @@
+InstanceType: t3a.medium
+MinSizeASGs: 2
+DesiredCapacityASG: 2
+MaxSizeASGs: 5
+LoadBalancerHealthCheckIntervalSeconds: 10
+LoadBalancerHealthCheckPath: /status
+InstancePort: 80
+InstanceProtocol: HTTP
+LoadBalancerHealthCheckTimeoutSeconds: 5
+LoadBalancerHealthyThresholdCount: 3
+LoadBalancerUnhealthyThresholdCount: 2
+AutoscalingTargetValue: 70
+ASGCoolDown: 300
+EstimatedInstanceWarmup: 60
+EmailAddress: example@example.com
+AppName: product
+# ApiName: asgapigw
+# EndpointConfigurationTypes: REGIONAL

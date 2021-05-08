@@ -1,0 +1,45 @@
+---
+ServiceId: RDS-MYSQL-READ-REPLICA
+ServiceType: awscf
+EnvironmentType: Aws
+DependentEnvironments:
+  - RDS-MYSQL
+ParameterOptions:
+  - GetEnvironment: RDS-MYSQL
+    GetOutputKey: DBIdentifier
+    ParameterKey: SourceDBinstanceidentifier
+  - GetEnvironment: RDS-MYSQL
+    GetOutputKey: DbInstanceClass
+    ParameterKey: DBInstanceClass
+  - GetEnvironment: RDS-MYSQL
+    GetOutputKey: StorageType
+    ParameterKey: StorageType
+  - GetEnvironment: RDS-MYSQL
+    GetOutputKey: Storagesize
+    ParameterKey: Storagesize
+  - GetEnvironment: RDS-MYSQL
+    GetOutputKey: Iops
+    ParameterKey: Iops
+  
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/rdsmysqlreadreplica.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: RDS-MYSQL-READ-REPLICA
+EnvironmentName: RDS MySQL READ REPLICA.
+Description: This environment deploys a read replica of RDS MYSQL.
+EnvironmentDocs: docs/rdsmysqlreadreplica.html
+EnvironmentGroup: SQL-RDS
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - CreateStack
+    - DescribeStack
+  Delete:
+    - DescribeStack
+    - DeleteStack
+CreditsPerHour: 0
+Limits:
+  - A RDS MYSQL READ REPLICA

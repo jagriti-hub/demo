@@ -1,0 +1,19 @@
+- name:
+  block:
+    - name: Step {{stepno}} - {{stepname}} - Task 1 - deletecodecommit - Delete a code commit
+      community.aws.aws_codecommit:
+        name: "{{apiname}}"
+        state: absent
+        region: "{{apenvironment.region}}"
+    - name: Step {{stepno}} - {{stepname}}  - Task 2 - s3source - Execute the Sourcecode
+      set_fact:
+        update_output: "false"
+        outputs: []
+  rescue:
+    - name: Step {{stepno}} - {{stepname}}  - Task - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: Step {{stepno}} - {{stepname}}  is failed
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed

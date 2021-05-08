@@ -1,0 +1,41 @@
+---
+- name: "Step {{stepno}} - {{stepname}} - Executing"
+  block:
+    - name: Task 1 - createrole - Create a role with ecs execution access
+      community.aws.iam_role:
+        name: "{{apiname}}-ecstaskexecrole"
+        assume_role_policy_document: "{{ lookup('file','policy.json') }}"
+      register: createecstaskexecrole
+    
+    - name: Task 2 - createpolicy - Create ecs execution policy
+      community.aws.iam_policy:
+        iam_type: role
+        iam_name: "{{apiname}}-ecstaskexecrole"
+        policy_name: "{{apiname}}-ecstaskpullimage"
+        state: present
+        policy_json: "{{ lookup( 'template', 'ecstaskpullimage.json.j2') }}"
+      register: createcstaskpullimagepolicy
+    
+    - name: Task 3 - ECS Cluster creation
+      community.aws.ecs_cluster:
+        name: "{{apiname}}-ecscluster"
+        state: present
+        region: "{{apenvironment.region}}"
+      register: cluster
+    
+    - name: Task 4 - Stack outputs - Register the outputs
+      set_fact:
+        update_output: "True"
+        outputs:
+          - OutputKey: "Clustername"
+            OutputValue: "{{cluster}}.clusterName"
+          - OutputKey: "ClusterARN"
+            OutputValue: "{{cluster}}.clusterArn"
+  rescue:
+    - name: "Step {{stepno}} - {{stepname}} - Faiure Message Registering"
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  "Step {{stepno}} - {{stepname}}  is failed"

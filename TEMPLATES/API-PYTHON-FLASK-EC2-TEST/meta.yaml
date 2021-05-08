@@ -1,0 +1,474 @@
+---
+TemplateId: API-EC2
+TemplateName: API PYTHON FLASK ON AWS EC2 WITH ASG, APIGW
+TemplateInputs: {}
+TemplateOutputs: {}
+DependentTemplate:
+  - name: NETWORK-PROJECT-BASE
+    DepTempId: d221600d9
+  
+  - name: DOMAIN-CERTIFICATE-PROJECT-BASE
+    DepTempId: d05ff5ec1
+
+TemplateActions:
+  Create:
+    - envid: KEYPAIR
+      deployid: ta8f651e8
+      action: Create
+    
+    - envid: CLOUDWATCH-LOGGROUP
+      deployid: t9011e767
+      action: Create
+    
+    - envid: CODE-REPO
+      deployid: tc0740167
+      action: Create
+      
+    - envid: DB-DYNAMODB
+      deployid: t416546c0
+      action: Create
+    
+    - envid: BUILD
+      deployid: tba9f6b03
+      action: Create
+    
+    - envid: EC2-ASG-ALB
+      deployid: t384b602c
+      action: Create
+    
+    - envid: API-GATEWAY-CUSTOM-DOMAIN
+      deployid: td6b802f6
+      action: Create
+    
+    - envid: API-GATEWAY
+      deployid: t3e5eef4c
+      action: Create
+    
+  Delete:
+    - envid: KEYPAIR
+      deployid: ta8f651e8
+      action: Delete
+    
+    - envid: CLOUDWATCH-LOGGROUP
+      deployid: t9011e767
+      action: Delete
+    
+    - envid: CODE-REPO
+      deployid: tc0740167
+      action: Delete
+    
+    - envid: DB-DYNAMODB
+      deployid: t416546c0
+      action: Delete
+    
+    - envid: BUILD
+      deployid: tba9f6b03
+      action: Delete
+    
+    - envid: EC2-ASG-ALB
+      deployid: t384b602c
+      action: Delete
+    
+    - envid: API-GATEWAY-CUSTOM-DOMAIN
+      deployid: td6b802f6
+      action: Delete
+    
+    - envid: API-GATEWAY
+      deployid: t3e5eef4c
+      action: Delete
+
+EnvironmentGroups:
+  - GroupName: Secrets
+    Environments:
+      - KEYPAIR
+  
+  - GroupName: LogStore
+    Environments:
+      - CLOUDWATCH-LOGGROUP
+      
+  - GroupName: CodeRepo
+    Environments:
+      - CODE-REPO
+      - BUILD
+  
+  - GroupName: Database
+    Environments:
+      - DB-DYNAMODB
+  
+  - GroupName: EC2-AutoScaling
+    Environments:
+      - EC2-ASG-ALB
+  
+  - GroupName: API-Gateway
+    Environments:
+      - API-GATEWAY-CUSTOM-DOMAIN
+      - API-GATEWAY
+
+Environments:
+  # - EnvironmentId: KEYPAIR
+  #   DeployId: ta8f651e8
+  #   dependentenv: []
+  
+  # - EnvironmentId: CLOUDWATCH-LOGGROUP
+  #   DeployId: t9011e767
+  #   dependentenv: []
+    
+  # - EnvironmentId: CODE-REPO
+  #   DeployId: tc0740167
+  #   dependentenv: []
+    
+  # - EnvironmentId: DB-DYNAMODB
+  #   DeployId: t416546c0
+  #   dependentenv: []
+  
+  # - EnvironmentId: BUILD
+  #   DeployId: tba9f6b03
+  #   dependentenv:
+  #     - EnvId: CODE-REPO
+  #       DeployId: tc0740167
+  
+  - EnvironmentId: EC2-ASG-ALB
+    DeployId: t384b602c
+    dependentenv:
+      - EnvId: VPC
+        DeployId: t61fb21ae
+      - EnvId: KEYPAIR
+        DeployId: ta8f651e8
+      - EnvId: IMPORT-DOMAIN
+        DeployId: t711630d2
+      - EnvId: ACM-CERT-PUBLIC
+        DeployId: tc6223c13
+      - EnvId: BUILD
+        DeployId: tba9f6b03
+  
+  - EnvironmentId: API-GATEWAY-CUSTOM-DOMAIN
+    DeployId: td6b802f6
+    dependentenv:
+      - EnvId: IMPORT-DOMAIN
+        DeployId: t711630d2
+  
+  - EnvironmentId: API-GATEWAY
+    DeployId: t3e5eef4c
+    dependentenv:
+      - EnvId: EC2-ASG-ALB
+        DeployId: t384b602c
+      - EnvId: API-GATEWAY-CUSTOM-DOMAIN
+        DeployId: td6b802f6
+
+
+Parameters:
+  KeyPairName:
+    Description: Keypair name for craeting keypair
+    Type: String
+    Mandatory: true
+  #################
+  apiname:
+    Description: The name of the new repository to be created
+    Type: String
+    value: mytestxyz
+    Mandatory: true
+  AppType:
+    Description: The name of the new repository to be created
+    Type: String
+    value: pythonflask
+    ReadOnly: true
+  apidefinition:
+    Description: The name of the new repository to be created
+    Type: Object
+    Value:
+      apistage:
+        Description: The name of the new repository to be created
+        Type: String
+        value: v1
+        Mandatory: true
+      apiactions:
+        Description: The name of action to be created
+        Type: ArrayOfJson
+        Value:
+          actionname:
+            Description: The name of action to be created
+            Type: String
+            value: status
+            Mandatory: true
+          actionmethod:
+            Description: The name of the method to be created
+            Type: String
+            Mandatory: true
+            AllowedValues:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+  apideploy:
+    Description: The name of the new repository to be created
+    Type: Object
+    Value:
+      deploytype:
+        Description: The name of the new repository to be created
+        Type: String
+        value: ec2albapigw
+        ReadOnly: true
+      ec2ami:
+        Description: The name of the new repository to be created
+        Type: Object
+        Value:
+          instancetype:
+            Description: The name of the new repository to be created
+            Type: String
+            value: t2.medium
+            AllowedValues:
+              - t2.micro
+              - t2.small
+              - t2.medium
+              - t2.large
+          baseostype:
+            Description: The name of the new repository to be created
+            Type: String
+            value: AmazonLinux2
+            AllowedValues:
+              - AmazonLinux2
+      ec2asg:
+        Description: The name of the new repository to be created
+        Type: Object
+        Value:        
+          instancetype:
+            Description: The name of the new repository to be created
+            Type: String
+            value: t2.medium
+            AllowedValues:
+              - t2.micro
+              - t2.small
+              - t2.medium
+              - t2.large
+          mininstance:
+            Description: The name of the new repository to be created
+            Type: Number
+            value: 2
+            MinValue: 1
+            MaxValue: 10
+          maxinstance:
+            Description: The name of the new repository to be created
+            Type: Number
+            value: 2
+            MinValue: 1
+            MaxValue: 10
+          threshold:
+            Description: The name of the new repository to be created
+            Type: Number
+            value: 70
+            MinValue: 50
+            MaxValue: 90
+  db:
+    Description: The name of the new repository to be created
+    Type: Object
+    Value:
+      deploytype:
+        Description: The name of the new repository to be created
+        Type: String
+        value: dynamodb
+        ReadOnly: true
+      dynamodbtables:
+        Description: The name of the new repository to be created
+        Type: ArrayOfJson
+        Value:
+          tablename:
+            Description: The name of the new repository to be created
+            Type: String
+            Mandatory: true
+          tableprefix:
+            Description: The name of the new repository to be created
+            Type: String
+            Mandatory: true
+          primarykey:
+            Description: The name of the new repository to be created
+            Type: String
+            Mandatory: true
+          primarykeyatt:
+            Description: The name of the new repository to be created
+            Type: String
+            AllowedValues:
+              - S
+              - N
+            value: S
+            Mandatory: true
+          sortkey:
+            Description: The name of the new repository to be created
+            Type: String
+          sortkeyatt:
+            Description: The name of the new repository to be created
+            Type: String
+            AllowedValues:
+              - S
+              - N
+            value: S
+          infra:
+            Description: The name of the new repository to be created
+            Type: Object
+            Value:
+              readiops:
+                Description: The name of the new repository to be created
+                Type: Number
+                value: 0
+              writeiops:
+                Description: The name of the new repository to be created
+                Type: Number
+                value: 0
+          secondarykeys:
+            Description: The name of the new repository to be created
+            Type: ArrayOfJson
+            Value:
+              secondarykey:
+                Description: The name of the new repository to be created
+                Type: String
+              secondarykeyatt:
+                Description: The name of the new repository to be created
+                Type: String
+                AllowedValues:
+                  - S
+                  - N
+                value: S
+              secondarysortkey:
+                Description: The name of the new repository to be created
+                Type: String
+              secondarysortkeyatt:
+                Description: The name of the new repository to be created
+                Type: String
+                AllowedValues:
+                  - S
+                  - N
+                value: S
+              infra:
+                Description: The name of the new repository to be created
+                Type: Object
+                Value:
+                  readiops:
+                    Description: The name of the new repository to be created
+                    Type: Number
+                    value: 0
+                  writeiops:
+                    Description: The name of the new repository to be created
+                    Type: Number
+                    value: 0
+              action:
+                Description: while updating what user wants to do with secondarykey create or delete.
+                Type: String
+                AllowedValues:
+                  - Create
+                  - Delete
+                value: Create
+                
+  code:
+    Description: The name of the new repository to be created
+    Type: Object
+    Value:
+      CodeRepoType:
+        Description: The name of the new repository to be created
+        Type: String
+        Mandatory: true
+      valuebranch:
+        Description: The name of the new repository to be created
+        Type: String
+        value: master
+        Mandatory: true
+      branches:
+        Description: The name of the new repository to be created
+        Type: Array
+        value: ["master"]
+        Mandatory: true
+      prodbranch:
+        Description: The name of the new repository to be created
+        Type: String
+        value: master
+        Mandatory: true
+      testbranch:
+        Description: The name of the new repository to be created
+        Type: String
+        value: test
+        Mandatory: true
+  
+  #################
+  LoadBalancerHealthCheckIntervalSeconds:
+    Description: Interval at which HealthCheck is monitored
+    Type: Number
+    value: 10
+  
+  InstancePort:
+    Description: InstancePort at which HealthCheck is monitored. Should be value from 1 to 65535
+    Type: Number
+    value: 80
+
+  InstanceProtocol:
+    Description: Instance protocol at which HealthCheck is monitored
+    Type: String
+    value: HTTP
+
+  LoadBalancerHealthCheckTimeoutSeconds:
+    Description: Timeout for the HealthCheck monitoring. Member must have value less than or equal to 120 and must be smaller than the interval
+    Type: Number
+    value: 5
+  
+  LoadBalancerHealthyThresholdCount:
+    Description: Healthy Threshold Count for LoadBalancer for health check monitoring.
+    Type: Number
+    value: 3
+  
+  LoadBalancerUnhealthyThresholdCount:
+    Description: UnHealthy Threshold Count for LoadBalancer for health check monitoring.
+    Type: Number
+    value: 2
+  
+  MinSizeASGs:
+    Description: Minimum number of instances to be launched in EC2 AutoScaling.
+    Type: Number
+    value: 2
+    
+  DesiredCapacityASG:
+    Description: Desired number of instances to be launched in EC2 AutoScaling.
+    Type: Number
+    value: 2
+  
+  MaxSizeASGs:
+    Description: Maximum number of instances to be launched in EC2 AutoScaling.
+    Type: Number
+    value: 3
+
+  AutoscalingTargetValue:
+    Description: CPU Utilization percentage on which AutoScaling is triggered.
+    Type: Number
+    value: 70
+  
+  ASGCoolDown:
+    Description: ASG will wait for cooldown seconds before scaling down the instances.
+    Type: Number
+    value: 300
+  
+  EstimatedInstanceWarmup:
+    Description: EstimatedInstanceWarmup for EC2 instances when scale up
+    Type: Number
+    value: 60
+  
+  EmailAddress:
+    Description: When EC2 uses max of Avg CPU utilisation, AutoScalingGroup launches the EC2 and an email is sent EC2 Scaling.
+    Type: String
+    value: example@example.com
+  
+  InstanceType:
+    Description: Type EC2 instance to lauch.
+    Type: String
+    value: t3a.medium
+    AllowedValues: 
+      - t3.micro
+      - t3a.medium
+      
+  EndpointConfigurationTypes:
+    Description: Give endpoint types of an API.
+    Type: String
+    AllowedValues: [
+      "EDGE",
+      "REGIONAL"]
+    value: EDGE
+
+  APIDomainName:
+    Type: String
+    Description: DomainName for the API from user input
+    value: prodapi

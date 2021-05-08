@@ -1,0 +1,58 @@
+---
+- name: "Create Code Repo for the Archeplay Template"
+  block:
+    - name: Execute Step
+      include_role:
+        name: executestep
+      vars:
+        stepname: pythoncode
+        stepdesc: Build Python Code Package to Deploy
+        stepno: 2
+        stepaction: build
+      when: AppType == "pythonflask"
+    - name: Execute Step
+      include_role:
+        name: executestep
+      vars:
+        stepname: ec2imageinstance
+        stepdesc: Create EC2 Instance for EC2-AMI Creation
+        stepno: 3
+        stepaction: build
+      when: build.image.type == "ec2ami" 
+    - name: Execute Step
+      import_role:
+        name: executestep
+      vars:
+        stepname: ec2deploypythonflask
+        stepdesc: Install and Configure Python Flask and Deploy Code, Start Python Flask Service
+        stepno: 4
+        stepaction: build
+      when: build.image.type == "ec2ami" 
+    - name: Execute Step
+      include_role:
+        name: executestep
+      vars:
+        stepname: ec2ami
+        stepdesc: Create AMI from EC2 Instance
+        stepno: 5
+        stepaction: build
+      when: build.image.type == "ec2ami"
+    - name: Execute Step
+      include_role:
+        name: executestep
+      vars:
+        stepname: ec2ami
+        stepdesc: Create AMI from EC2 Instance
+        stepno: 5
+        stepaction: cleanup
+      when: build.image.type == "ec2ami"
+  rescue:
+    - name: Execute rollback Step
+      include_role:
+        name: executestep
+      vars:
+        stepname: imagebuild
+        stepdesc: Create Code Commit Repository
+        stepno: 1
+        stepaction: rollback
+      when: build.image.type == "ec2ami"

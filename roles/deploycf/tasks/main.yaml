@@ -1,0 +1,29 @@
+---
+- name: "{{templateid}}-{{EnvironmentId}}-{{action}} - CF-1 - Load the Code"
+  copy: 
+    src: "{{envsourcefolder}}/code.yaml"
+    dest: "{{envdeploymentfolder}}/code.yaml"
+- name: "{{templateid}}-{{EnvironmentId}}-{{action}} - CF-2 Deploy the Cloudformation of the Enviroinment"
+  cloudformation:
+    stack_name: "{{EnvironmentId}}-{{ apenvironment.deploymentid }}"
+    state: "present" 
+    region: "{{ apenvironment.region }}"
+    disable_rollback: false
+    template: "{{ envdeploymentfolder }}/code.yaml"
+    template_parameters: "{{ lookup('file', '{{ envdeploymentfolder }}/parameter.yaml') | from_yaml  }}"
+    tags:
+      Stack: "ansible-cloudformation"
+  when: ( deploymentaction == "Create" or deploymentaction == "Update" )
+  register: stack_output 
+- name: "{{templateid}}-{{EnvironmentId}}-{{action}} - CF-3 Get the Out of CF"
+  copy:
+    content: "{{ stack_output.stack_outputs  }}"
+    dest: "{{ envdeploymentfolder }}/output.json"
+  when: ( deploymentaction == "Create" or deploymentaction == "Update" )
+- name: "{{templateid}}-{{EnvironmentId}}-{{action}} - CF-3 Delete the CF"
+  cloudformation:
+    stack_name: "{{ EnvironmentId }}-{{apenvironment.deploymentid}}"
+    state: "absent" 
+    region: "{{ apenvironment.region }}"
+  when: ( deploymentaction == "Delete" )
+  register: delete_stack_output 

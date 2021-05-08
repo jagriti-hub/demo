@@ -1,0 +1,90 @@
+---
+- name: Set the Folder code push execution
+  set_fact:
+    deploymentfolder: "{{Environmenthome}}/workfolder/{{EnvironmentName}}"
+- name: Create a the deployment folder
+  file:
+    path: "{{deploymentfolder}}"
+    state: directory
+    mode: '0755'
+- name: Loading Resource Meta File
+  include_vars:
+    file: "{{Environmenthome}}/ENVIRONMENTS/{{EnvironmentName}}/meta.yaml"
+    name: meta
+- name: Create Service Json
+  copy:
+    dest: "{{deploymentfolder}}/service.json"
+    content:
+      ServiceId: "{{meta.EnvironmentId}}"
+      ServiceType: "{{meta.ServiceType}}"
+      Input: "{{meta.Input}}"
+      EnvironmentType: "{{meta.EnvironmentType}}"
+      EnvironmentId: "{{meta.EnvironmentId}}"
+      ParameterOptions: "{{meta.ParameterOptions}}"
+      DependentEnvironments: "{{meta.DependentEnvironments}}"
+      OutputOptions: "{{meta.OutputOptions}}"
+      CostType: "{{meta.CostType}}"
+      UsageType: "{{meta.UsageType}}"
+      Actions: "{{meta.Actions}}"
+      
+- name: Setting the Table name and file name for Service
+  set_fact:
+    datafile: "{{deploymentfolder}}/service.json"
+    tablename: "{{servicetablename}}"
+- name: Create Service DB push script
+  template:
+    src: archeplay.j2
+    dest: "{{deploymentfolder}}/service.py"
+
+- name: push environment service data to DB
+  script: "{{deploymentfolder}}/service.py"
+  args:
+    executable: python3
+
+- name: Remove Service Db push File
+  file: 
+    name: "{{deploymentfolder}}/dbinputs/service.py"
+    state: absent
+
+- name: Create Environment Json
+  copy:
+    dest: "{{deploymentfolder}}/environment.json"
+    content:
+      EnvironmentId: "{{meta.EnvironmentId}}"
+      EnvironmentType: "{{meta.EnvironmentType}}"
+      EnvironmentName: "{{meta.EnvironmentName}}"
+      EnvironmentGroup: "{{meta.EnvironmentGroup}}"
+      DependentEnvironments: "{{meta.DependentEnvironments}}"
+      ParentEnvironment: "{{meta.ParentEnvironment}}"
+      ActionEnvironment: "{{meta.ActionEnvironment}}"
+      EnvironmentDocs: "{{meta.EnvironmentDocs}}"
+      ServiceId: "{{meta.EnvironmentId}}"
+      CreditsPerHour: "{{meta.CreditsPerHour }}"
+- name: Set Environment File and Table name
+  set_fact:
+    datafile: "{{deploymentfolder}}/environment.json"
+    tablename: "{{environmenttablename}}"
+- name: Create Environment DB script
+  template:
+    src: archeplay.j2
+    dest: "{{deploymentfolder}}/environment.py"
+- name: push environment data to DB
+  script: "{{deploymentfolder}}/environment.py"
+  args:
+    executable: python3
+- name: Remove Environment DB Push file
+  file: 
+    name: "{{deploymentfolder}}/environment.py"
+    state: absent
+- name: Upload Code to S3 Code Repository
+  command: "aws s3 cp {{Environmenthome}}/ENVIRONMENTS/{{EnvironmentName}}/code.yaml s3://{{s3bucketname}}/{{meta.Input.Templatekey}}"
+  when: meta.ServiceType == "awscf" or meta.ServiceType == "python"
+- name: Compress directory /path/to/foo/ into /path/to/foo.tgz
+  archive:
+    path: "{{Environmenthome}}/ENVIRONMENTS/{{EnvironmentName}}/code"
+    dest: "{{deploymentfolder}}/code.zip"
+    format: zip
+  when: meta.ServiceType == "ansible"
+- name: Upload Code to S3 Code Repository
+  command: "aws s3 cp {{deploymentfolder}}/code.zip s3://{{s3bucketname}}/{{meta.Input.Templatekey}}"
+  when: meta.ServiceType == "ansible"

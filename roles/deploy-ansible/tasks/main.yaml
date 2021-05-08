@@ -1,0 +1,55 @@
+- debug: 
+    var: deploymentaction
+- name: copy ansible ansible code folder
+  copy:
+    src: "{{envsourcefolder}}/code/"
+    dest: "{{envdeploymentfolder}}/code"
+- include_vars:
+    file: "{{ envdeploymentfolder }}/parameter.json"
+    name: currentparameter
+  when: deploymentaction == "Create"
+- set_fact:
+   apparams:
+     ap: "{{ap}}"
+     apenvironment: "{{apenvironment}}"
+  when: deploymentaction == "Create"
+- name:
+  set_fact: 
+    ansibleparameter: "{{ currentparameter | combine(apparams) }}"
+  when: deploymentaction == "Create"
+- copy:
+    content: "{{ansibleparameter}}"
+    dest: "{{ envdeploymentfolder }}/parameter.json"
+  when: deploymentaction == "Create"
+- debug: 
+    var: deploymentaction
+- name: Running ansible playbook for template
+  shell: "ansible-playbook {{envdeploymentfolder}}/code/{{deploymentaction}}.yaml -e '@{{envdeploymentfolder}}/parameter.json' -e envdeploymentfolder={{envdeploymentfolder}} > {{envdeploymentfolder}}/buildlog"
+  when: deploymentaction == "Create"
+    
+- name: Running ansible playbook for template
+  shell: "ansible-playbook {{envdeploymentfolder}}/code/{{deploymentaction}}.yaml -e '@{{envdeploymentfolder}}/parameter.json' -e '@{{envdeploymentfolder}}/output.json' -e envdeploymentfolder={{envdeploymentfolder}} > {{envdeploymentfolder}}/buildlog"
+  when: deploymentaction == "Delete"
+
+- name: Copy output file from tmp
+  include_vars:
+    file: "{{envdeploymentfolder}}/output.json"
+    name: Outputs
+  when: deploymentaction == "Create"
+
+- name: Copy Parseoutput.py to deployment folder
+  copy:
+    src: parseoutput.py
+    dest: "{{envdeploymentfolder}}/parseoutput.py"
+    mode: 0755
+  when: deploymentaction == "Create"
+
+- name: get outputs
+  shell: "python {{envdeploymentfolder}}/parseoutput.py {{envdeploymentfolder}}/output.json {{envdeploymentfolder}}/output-parsed.json"
+  when: deploymentaction == "Create"
+  
+- name: Copy output file
+  copy:
+    src: "{{envdeploymentfolder}}/output-parsed.json"
+    dest: "{{envdeploymentfolder}}/output.json"
+  when: deploymentaction == "Create"

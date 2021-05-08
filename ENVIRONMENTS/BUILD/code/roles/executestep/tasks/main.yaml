@@ -1,0 +1,38 @@
+- block:
+    - name: Create workfolder if not exists
+      stat:
+        path: "{{envdeploymentfolder}}"
+      register: workfolder
+    
+    - name: Create a directory if not exists 
+      file:
+        state: directory
+        path: "{{envdeploymentfolder}}"
+        mode: 0755
+      when: workfolder.stat.isdir is not defined
+    - name: "Step Started"
+      include_role:
+        name: stepevent
+      vars:
+        stepstatus: "{{stepaction|upper}}_IN_PROGRESS"
+    - name:  Step Executing
+      include_role:
+        name: "{{stepname}}-{{stepaction|lower}}"
+    - name:  Step Succeded
+      include_role:
+        name: stepevent
+      vars:
+        stepstatus: "{{stepaction|upper}}_COMPLETED"
+    - name:  Step Output
+      include_role:
+        name: stepoutput
+      when: outputs is defined and  (outputs|length>0)
+  rescue:
+    - name: Step Failed
+      include_role:
+        name: stepevent
+      vars:
+        stepstatus: "{{stepaction|upper}}_FAILED"
+    - name: Step is failed
+      fail:
+        msg: "{{stepname}} is failed"

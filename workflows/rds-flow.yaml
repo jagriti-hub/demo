@@ -1,0 +1,103 @@
+---
+workflows:
+  WorkflowId: wf-b00001
+  WorkflowName: rdsworkflow
+  Environments:
+  - Name: VPC
+    parameters: default
+    deploymentid: b000011
+    dependentenv: []
+  - Name: NATGATEWAY
+    parameters: default
+    deploymentid: b000012
+    dependentenv:
+    - name: VPC
+      deploymentid: b000011
+  - Name: ACM-CERT-PUBLIC
+    parameters: default
+    deploymentid: b000013
+    dependentenv:
+    - name: PUBLIC-SUBDOMAIN
+      deploymentid: 1124967
+  # - Name: RDS-MYSQL
+  #   parameters: default
+  #   deploymentid: b000018
+  #   dependentenv: 
+  #   - name: VPC
+  #     deploymentid: b000011
+  # - Name: RDS-MYSQL-READ-REPLICA
+  #   parameters: default
+  #   deploymentid: b000030
+  #   dependentenv:
+  #   - name: RDS-MYSQL
+  #     deploymentid: b000018
+  # # - Name: KEYPAIR
+  # #   parameters: default
+  # #   deploymentid: b000015
+  # #   dependentenv: []
+  # # - Name: S3-DATA-BUCKET
+  # #   parameters: default
+  # #   deploymentid: b000016
+  # #   dependentenv: []
+  # # - Name: DYNAMODB
+  # #   parameters: default
+  # #   deploymentid: b000021
+  # #   dependentenv: []
+  # # - Name: DYNAMODB-DATAPUSH-S3
+  # #   parameters: default
+  # #   deploymentid: b000023
+  # #   dependentenv:
+  # #   - name: VPC
+  # #     deploymentid: b000011
+  # #   - name: KEYPAIR
+  # #     deploymentid: b000015
+  # #   - name: S3-DATA-BUCKET
+  # #     deploymentid: b000016
+  # #   - name: DYNAMODB
+  # #     deploymentid: b000021
+  # # # - Name: EKS-CLUSTER
+  # # #   parameters: default
+  # # #   deploymentid: b000024
+  # # #   dependentenv:
+  # # #   - name: VPC
+  # # #     deploymentid: b000011
+  # # # - Name: S3-ENDPOINT-PUBLIC
+  # # #   parameters: default
+  # # #   deploymentid: b000013
+  # # #   dependentenv:
+  # # #   - name: VPC
+  # # #     deploymentid: b000011
+  # # # - Name: DYNDB-ENDPOINT-PUB
+  # # #   parameters: default
+  # # #   deploymentid: b000014
+  # # #   dependentenv:
+  # # #   - name: VPC
+  # # #     deploymentid: b000011
+
+  # # - Name: MYSQL-DATAPUSH-S3
+  # #   parameters: default
+  # #   deploymentid: b000019
+  # #   dependentenv:
+  # #   - name: VPC
+  # #     deploymentid: b000011
+  # #   - name: KEYPAIR
+  # #     deploymentid: b000015
+  # #   - name: S3-DATA-BUCKET
+  # #     deploymentid: b000016
+  # #   - name: RDS-MYSQL
+  # #     deploymentid: b000018
+  # # - Name: START-MYSQL-DATAPUSH
+  # #   parameters: default
+  # #   deploymentid: b000020
+  # #   dependentenv:
+  # #   - name: MYSQL-DATAPUSH-S3
+  # #     deploymentid: b000019
+  
+  # # - Name: START-DYNAMODB-DATAPUSH
+  # #   parameters: default
+  # #   deploymentid: b000023
+  # #   dependentenv:
+  # #   - name: DYNAMODB-DATAPUSH-S3
+  # #     deploymentid: b000022
+    
+    

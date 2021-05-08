@@ -1,0 +1,15 @@
+---
+Environmenthome: /home/ec2-user/environment/Test/ap-environment
+deploymentversion: v1
+listoftemplates:
+  - templateid: PROJECT-BASE
+    templatedeploymentid: tmp-a00001
+    parametername: default
+    dependenttemplate: []
+  - templateid: API-PYTHON-FLASK-EC2
+    templatedeploymentid: tmp-a00002
+    parametername: default
+    dependenttemplate:
+      - name: PROJECT-BASE
+        templatedeploymentid: tmp-a00001
+        DepTempId: d1

@@ -1,0 +1,52 @@
+- name:
+  block:
+    - name: Step {{stepno}} - {{stepname}}  - Task 1 - gitconfig1 -  set aws code commit git config
+      community.general.git_config:
+        name: credential.helper
+        scope: global
+        value: '!aws codecommit credential-helper $@'
+      register: gitconfig1
+    - name: Step {{stepno}} - {{stepname}}  - Task 2 - gitconfig2 -  set aws code commit http path git config
+      community.general.git_config:
+        name: credential.UseHttpPath
+        scope: global
+        value: true
+      register: gitconfig2
+    - name: Step {{stepno}} - {{stepname}}  - Task 3 - gitconfig3 -  set aws code commit user emai git config
+      community.general.git_config:
+        name: user.email
+        scope: global
+        value: "admin@archeplay.com" 
+      register: gitconfig3
+    - name: Step {{stepno}} - {{stepname}} - Task 4 - gitconfig4 -  set aws code commit user emai git config
+      community.general.git_config:
+        name: user.name
+        scope: global
+        value: "archeplay-admin"
+      register: gitconfig4
+    - name: Step {{stepno}} - {{stepname}} - Task 5 - backupcodecommitrepo - backup a code commit repo
+      git:
+        repo: "{{lookup('vars', 'codecommitrepoid')}}"
+        dest: "/tmp/{{apiname}}"
+        archive: /tmp/{{apiname}}.zip
+      register: backupcodecommitrepo
+    - name: stepoutput - publish the backup file
+      amazon.aws.aws_s3:
+        bucket: "{{ap.templaterepo}}"
+        object: "backup/{{apiname}}.zip"
+        src: "/tmp/{{apiname}}.zip"
+        mode: put
+    - name: Step {{stepno}} - {{stepname}}  - Task 7 - s3source - Execute the Sourcecode
+      set_fact:
+        update_output: "false"
+        outputs: []
+  rescue:
+    - name: Step {{stepno}} - {{stepname}}  - Task 8 - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed
+    
+ 

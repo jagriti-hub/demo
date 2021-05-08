@@ -1,0 +1,18 @@
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Sid": "ap",
+            "Effect": "Allow",
+            "Action": [
+                "dynamodb:*Item*",
+                "dynamodb:Scan",
+                "dynamodb:Query",
+                "dynamodb:List*",
+                "dynamodb:Get*",
+                "dynamodb:Describe*"
+            ],
+            "Resource": "arn:aws:dynamodb:::/table/{{table.tablename}}"
+        }
+    ]
+}

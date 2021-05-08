@@ -1,0 +1,41 @@
+---
+- name: "Create Code Repo for the Archeplay Template"
+  hosts: localhost
+  become: true
+  tasks:
+  - block:
+      # - set_fact:
+      #     code: "{{ lookup('vars', 'code')}}"
+      #     apiname: "{{ lookup('vars', 'apiname')}}"
+      #     AppType: "{{ lookup('vars', 'AppType')}}"
+      #     apidefinition: "{{ lookup('vars', 'apidefinition')}}"
+      #     db: "{{ lookup('vars', 'db')}}"
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: asg
+          stepdesc: ECS Cluster Deletion
+          stepno: 1
+          stepaction: delete
+      
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: asg
+          stepdesc: ECS Cluster Deletion
+          stepno: 2
+          stepaction: describe
+      
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Deleted
+    # rescue:
+    #   - name: get env status
+    #     include_role:
+    #       name: stepop
+    #     vars:
+    #       envstatus: Failed

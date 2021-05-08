@@ -1,0 +1,142 @@
+Description: Python Code for creating, Describing and Deleting the EC2 keypair.
+Metadata:
+  Architecture:
+    - Title: KEYPAIR
+      Image: productapiasg-productkeypair
+      Description: Architecture for EC2 Key Pair.
+    
+    - Title: Deployment Sequence
+      Image: environment-deployment-sequence
+      Description: Sequence of environment deployment for e-commerce application
+
+Parameters:
+  KeyPairName:
+    Description: Give a Key Pair Name.
+    Type: String
+    Default: product-keypair
+
+Resources:
+  Create:
+    Type: boto::ec2::create_key_pair
+    Metadata:
+      Description: This Python Function will Create the Ec2 Keypair
+    Code: |
+      import time
+      keypair_client = connection.client('ec2')
+      secret_client = connection.client('secretsmanager')
+      try:
+        response = keypair_client.create_key_pair(KeyName=Input["KeyPairName"])
+        # privatekey= response['KeyMaterial']
+        
+        
+        create_secret_fnc = secret_client.create_secret(
+          Name=Input["KeyPairName"],
+          SecretString=str(response['KeyMaterial'])
+        )
+        print("completed create secret")
+        
+        print(create_secret_fnc)
+        secretARN=create_secret_fnc["ARN"]
+        secretName=create_secret_fnc["Name"]
+        secretVersionId=create_secret_fnc["VersionId"]
+        
+        Outputs=[
+        {
+          "OutputKey":"KeyName",
+          "OutputValue":Input["KeyPairName"]
+        },
+        {
+          "OutputKey":"SecretARN",
+          "OutputValue":secretARN
+        },
+        {
+          "OutputKey":"SecretName",
+          "OutputValue":secretName
+        },
+        {
+          "OutputKey":"SecretVersionId",
+          "OutputValue":secretVersionId
+        }
+        
+        ]
+        OP={
+            "Outputs":Outputs,
+            "State":"Created"
+            }
+      except:
+        print("keypair already exist")
+        OP={
+          "State":"completed"
+          }
+  Delete: 
+    Type: boto::ec2::delete_key_pair
+    Metadata:
+      Description: This Python Function will Delete the Ec2 Keypair
+    Code: |
+      keypair_client = connection.client('ec2')
+      secret_client = connection.client('secretsmanager')
+      for item in Outputs:
+        if item["OutputKey"] == "SecretARN":
+          secretARN = item["OutputValue"]
+      
+      for key in Input["KeyPairName"]:
+        response = keypair_client.delete_key_pair(KeyName=Input["KeyPairName"])
+        
+        delete_secret_fnc = secret_client.delete_secret(
+          SecretId=secretARN,
+          ForceDeleteWithoutRecovery=True
+        )
+      print("Keys has been Deleted")
+      OP={
+          "State":"Deleted"
+          }
+  Describe: 
+    Type: boto::ec2::describe_key_pairs
+    Metadata:
+      Description: This Python Function will Describe the Ec2 Keypair
+    Code: |
+      keypair_client = connection.client('ec2')
+      secret_client = connection.client('secretsmanager')
+      response = keypair_client.describe_key_pairs(KeyNames=[Input["KeyPairName"]])['KeyPairs'][0]
+      
+      for item in Outputs:
+        if item["OutputKey"] == "SecretARN":
+          SecretARN = item["OutputValue"]
+      
+      
+      get_secret_value_fnc = secret_client.get_secret_value( SecretId=SecretARN )
+      secretARN=get_secret_value_fnc["ARN"]
+      secretName=get_secret_value_fnc["Name"]
+      secretVersionId=get_secret_value_fnc["VersionId"]
+      
+      op=[
+        {
+          "OutputKey": "KeyPairId",
+          "OutputValue": response['KeyPairId']
+        },
+        {
+          "OutputKey":"SecretARN",
+          "OutputValue":secretARN
+        },
+        {
+          "OutputKey":"SecretName",
+          "OutputValue":secretName
+        },
+        {
+          "OutputKey":"SecretVersionId",
+          "OutputValue":secretVersionId
+        }
+      ]
+      if op not in Outputs:
+        # Outputs.append(op)
+        Outputs= Outputs+op
+      OP={
+          "Outputs":Outputs,
+          "State":"Running"
+        }
+Outputs:
+  KeyName: 
+    Description: Name of the keypair which got created.
+
+  # Privatekey:
+  #   Description: An unencrypted PEM encoded RSA private key.

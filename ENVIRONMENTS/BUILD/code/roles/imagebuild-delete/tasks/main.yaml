@@ -1,0 +1,50 @@
+---
+- name: Task 1 - image build delete
+  block:
+    - name: TASK - 1 Copy output.json
+      copy:
+        src: "{{envdeploymentfolder}}/output.json"
+        dest: "/tmp/output.json"
+        remote_src: yes
+    
+    - name: TASK - 2 get output
+      include_vars:
+        file: "/tmp/output.json"
+        name: output
+    - debug:
+        var: output
+    
+    - name: TASK - 3 get amiid into a variable
+      set_fact:
+        deregisterami: "{{output.EC2amiId}}"
+    
+    - name: op of deregisterami
+      debug:
+        var: deregisterami
+    
+    - name: Task 4 - Delete ami image
+      amazon.aws.ec2_ami:
+        image_id: "{{deregisterami}}"
+        region: "{{apenvironment.region}}"
+        delete_snapshot: yes
+        state: absent
+    - name: Step {{stepno}} - {{stepname}}  - Task 5 - Register the outputs
+      set_fact:
+        update_output: "false"
+        outputs: []
+  rescue:
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+      register: failedmsg
+      when: ansible_failed_result.msg and ansible_failed_result.stderr is defined
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedmessage: "{{ansible_failed_result.msg}}"
+      when: failedmsg is skipped
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed

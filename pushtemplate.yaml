@@ -1,0 +1,22 @@
+---
+- hosts: localhost
+  tasks:
+  - name: Include the List of Environment to be pushed
+    include_vars:
+      file: "{{Environmenthome}}/pushcode/{{templatelist}}.yaml"
+      name: listoftemplate
+  # - name: Create Documents
+  #   include_role:
+  #     name: createdoc
+  #   vars:
+  #     Environmentname: "{{item}}"
+  #   loop:
+  #     "{{listofenv.listofenv}}"
+  - name: Include Push the Code
+    include_role:
+      name: pushtemplatetodb
+    vars:
+      TemplateId: "{{item}}"
+    loop:
+      "{{listoftemplate.listoftemplate}}"
+      

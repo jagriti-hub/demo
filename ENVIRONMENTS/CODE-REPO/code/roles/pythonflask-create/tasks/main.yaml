@@ -1,0 +1,62 @@
+---
+- name: Step {{stepno}} - {{stepname}} - Executing
+  block:
+    - name: Step {{stepno}} - {{stepname}} - Task 1 - flaskbase -  Copy flask and gunicorn python files
+      template:
+        src: "{{item}}"
+        dest: "/tmp/{{apiname}}/{{item}}"
+        mode: 0755 
+      loop:
+        - app.py
+        - wsgi.py
+        - addactions
+        - requirement.txt
+      register: flaskbase
+    - name: Step {{stepno}} - {{stepname}} - Task 2 - createconffolder - Create conf folder
+      file:
+        path: "/tmp/{{apiname}}/conf"
+        state: directory
+      register: createconffolder
+    - name: Step {{stepno}} - {{stepname}} - Task 3 - copynginxconf -  Copy the nginx config file
+      template:
+        src: "nginx.conf"
+        dest: "/tmp/{{apiname}}/conf/nginx.conf"
+      register: copynginxconf
+    - name: Step {{stepno}} - {{stepname}} - Task 4 - bootstrapcode-copyflaskgunicornconf - Copy the gunicorn config file
+      template:
+        src: "gunicorn.conf"
+        dest: "/tmp/{{apiname}}/conf/{{apiname}}.service"
+    - name: Step {{stepno}} - {{stepname}} - Task 5 - bootstrapcode-createapiactionsfolder - Create conf folder
+      file:
+        path: "/tmp/{{apiname}}/apiactions"
+        state: directory
+      register: createapiactionsfolder
+    - name: Step {{stepno}} - {{stepname}} - Task 6 - bootstrapcode-createapiactions Create API Actions
+      shell: "/tmp/{{apiname}}/addactions -v {{apidefinition.apistage}} -n {{item.actionname}} -m {{item.actionmethod}}"
+      loop: 
+        "{{apidefinition.apiactions}}"
+      register: createapiactions
+    - name: Step {{stepno}} - {{stepname}} - Task 7 - bootstrapcode-createdbconffolder - Create conf folder
+      file:
+        path: "/tmp/{{apiname}}/dbconf"
+        state: directory
+      register: createdbconffolder
+    - name: Step {{stepno}} - {{stepname}} - Task 8 -  bootstrapcode-createdbconffolder 
+      include_tasks: parsetable.yaml
+      loop: 
+        "{{db.dynamodbtables}}"
+      loop_control:
+        loop_var: table
+    - name: Step {{stepno}} - {{stepname}}  - Task 7 - s3source - Execute the Sourcecode
+      set_fact:
+        update_output: "false"
+  rescue:
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed
+      
+        

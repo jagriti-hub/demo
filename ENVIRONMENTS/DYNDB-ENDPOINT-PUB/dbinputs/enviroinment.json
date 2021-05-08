@@ -1,0 +1,32 @@
+{
+    "Description": "test",
+    "CreditsPerHour": 10,
+    "Enviroinmentname": "APP-ASG-ALB-DNS-PUBLIC",
+    "ServiceId": "APP-ASG-ALB-DNS-PUBLIC",
+    "EnvironmentType": "Aws",
+    "ExecutorId": "AwsCloudformation",
+    "ServiceType": "awscf",
+    "UsageType": "Permanent",
+    "CostType": "Nocost",
+    "DependentEnvironments": [
+        "ACCESS-RDS"
+    ],
+    "ChildEnvironments": [
+        "AWS-VPC-CF"
+    ],
+    "Limits": [
+        "test",
+        "test"
+    ],
+    "Input": {
+        "StackName": "APP-ASG-ALB-DNS-PUBLIC",
+        "Templatekey": "Aws/autoscalingcf.yml"
+    },
+    "ParameterOptions": [
+        {
+            "GetEnvironment": "ACCESS-RDS",
+            "GetOutputKey": "rdsendpoint",
+            "ParameterKey": "RdsEndpoint"
+        }
+    ]
+}

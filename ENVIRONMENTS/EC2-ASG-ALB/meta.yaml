@@ -1,0 +1,73 @@
+---
+ServiceId: EC2-ASG-ALB
+ServiceType: awscf
+EnvironmentType: Aws
+DependentEnvironments: []
+  # - VPC
+  # - KEYPAIR
+  # - IMPORT-SUBDOMAIN
+  # - ACM-CERT-PUBLIC
+ParameterOptions: []
+  # - GetTemplate: VPCID
+  #   ParameterKey: VPCID
+  
+  # - GetEnvironment: VPC
+  #   GetOutputKey: PublicSubnet1ID
+  #   ParameterKey: PublicSubnet1ID
+  
+  # - GetEnvironment: VPC
+  #   GetOutputKey: PublicSubnet2ID
+  #   ParameterKey: PublicSubnet2ID
+  
+  # - GetEnvironment: VPC
+  #   GetOutputKey: PrivateSubnet1ID
+  #   ParameterKey: PrivateSubnet1ID
+  
+  # - GetEnvironment: VPC
+  #   GetOutputKey: PrivateSubnet2ID
+  #   ParameterKey: PrivateSubnet2ID
+  
+  # - GetEnvironment: KEYPAIR
+  #   GetOutputKey: KeyName
+  #   ParameterKey: KeyName
+  
+  # - GetEnvironment: IMPORT-SUBDOMAIN
+  #   GetOutputKey: HostedZoneId
+  #   ParameterKey: Hostedzone
+  
+  # - GetEnvironment: IMPORT-SUBDOMAIN
+  #   GetOutputKey: DOMAINNAME
+  #   ParameterKey: DomainName
+  
+  # - GetEnvironment: ACM-CERT-PUBLIC
+  #   GetOutputKey: CertificateARN
+  #   ParameterKey: Certificate
+    
+  # - GetEnvironment: CODE-REPO
+  #   GetOutputKey:
+  #   ParameterKey: AMIId
+  # - ParameterKey: AppName
+  #   AutoGenerate: product-
+    
+OutputOptions: []
+Input:
+  Templatekey: Aws/ec2asgalb.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: EC2-ASG-ALB
+EnvironmentName: Product API with Auto Scaling Group
+Description: This template deploys a Product API using Lauch Template with AutoScaling Group and the ApplicationLoadBalancer
+EnvironmentDocs: docs/ec2asgalb.html
+EnvironmentGroup: API
+ActionEnvironment: "Null"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - CreateStack
+    - DescribeStack
+  Delete:
+    - DeleteStack
+    - DescribeStack
+CreditsPerHour: 0
+Limits:
+  - Auto Scaling Group with Application Load Balancer

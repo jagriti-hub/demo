@@ -1,0 +1,33 @@
+---
+- name: Step {{stepno}} - {{stepname}} - Executing
+  block:
+    - set_fact:
+        tablepolicyarns: []
+        tablenames: []
+    - name: Step {{stepno}} - {{stepname}} - Task 1 - dynamodb -  Create DynamoDB Table
+      include_tasks:
+        file: createtable.yaml
+      loop:
+        "{{db.dynamodbtables}}"
+      loop_control:
+        loop_var: table
+      register: table
+    - name: Step {{stepno}} - {{stepname}}  - Task 2 - dynamodboutput - Register the outputs
+      set_fact:
+        update_output: "true"
+        outputs:
+          - OutputKey: "tablenames"
+            OutputValue: "{{tablenames}}"
+          - OutputKey: "tablepolicyarns"
+            OutputValue: "{{tablepolicyarns}}"
+          - OutputKey: "tablepolicyarnscf"
+            OutputValue: "{{tablepolicyarns | join(',')}}"
+  rescue:
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed
+ 

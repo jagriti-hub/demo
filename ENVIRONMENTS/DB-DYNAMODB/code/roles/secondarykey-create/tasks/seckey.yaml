@@ -1,0 +1,5 @@
+- name: Step {{stepno}} - {{stepname}} - Task 1 - createseckey-{{secondarykey.secondarykey}} -  Create Secondary key
+  script: updatetable.py "{{table}}" "{{apenvironment.region}}" "{{secondarykey}}"
+  args:
+    executable: python3
+  register: secondarykeycreate

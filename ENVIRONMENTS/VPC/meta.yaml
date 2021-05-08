@@ -1,0 +1,35 @@
+---
+EnvironmentId: VPC
+EnvironmentName: Deploy a VPC with 2 Public and 2 Private Subnets.
+Description: This template deploys a VPC, with a pair of public and private subnets spread
+  across two Availability Zones. It deploys an internet gateway, with a public route for the 
+  public subnets. And private route for the private subnets. 
+EnvironmentDocs: docs/vpc.html
+Actions:
+  Create:
+    - CreateStack
+    - DescribeStack
+  Update:
+    - UpdateStack
+    - DescribeStack
+  Delete:
+    - DeleteStack
+    - DescribeStack
+ServiceId: VPC
+ServiceType: awscf
+EnvironmentType: Aws
+Input:
+  Templatekey: Aws/vpc.yaml
+EnvironmentGroup: "NULL"
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+DependentEnvironments: []
+ParameterOptions: []
+OutputOptions: []
+UsageType: Permanent
+CostType: Nocost
+CreditsPerHour: 0
+Limits:
+  - 2 tier VPC with Public and Private Subnets
+  - Public subnets are exposed to the internet
+  - Private Subnets are with in the VPC

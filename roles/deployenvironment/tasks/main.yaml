@@ -1,0 +1,61 @@
+- name: "{{templateid}}-{{EnvironmentId}} - Setp 1 -Set the Environment Deployment Folder variable"
+  set_fact:
+    envsourcefolder: "{{Environmenthome}}/ENVIRONMENTS/{{EnvironmentId}}"
+    envdeploymentfolder: "{{templatedeploymentfolder}}/environments/{{apenvironment.deploymentid}}"
+- name: "{{templateid}}-{{EnvironmentId}} - Setp 2 - Create Environment Deployment Folder"
+  file:
+    path: "{{envdeploymentfolder}}"
+    state: directory
+- name: "{{templateid}}-{{EnvironmentId}} - Setp 3 - Load Environment Meta"
+  include_vars:
+    file: "{{envsourcefolder}}/meta.yaml"
+    name: meta
+- debug:
+    var: ParameterFile
+- name: "{{templateid}}-{{EnvironmentId}} - Setp 4 - Create Parameter file"
+  template:
+    src: "{{ParameterFile}}"
+    dest: "{{envdeploymentfolder}}/parameter.yaml"
+- name:
+  copy: 
+    src: templateyamltojson.py
+    dest: "{{envdeploymentfolder}}/templateyamltojson.py"
+- shell: "pwd"
+- shell: "python {{envdeploymentfolder}}/templateyamltojson.py {{envdeploymentfolder}}/parameter.yaml {{envdeploymentfolder}}/parameter.json"
+
+- name: "{{templateid}}-{{EnvironmentId}} - Setp 5 - Get the Environment Actions"
+  set_fact:
+    resourceactions: "{{metactions.value}}"
+  when: metactions.key|lower == deploymentaction|lower
+  loop:
+    "{{meta.Actions | dict2items}}"
+  loop_control:
+    loop_var: metactions
+- name: "{{templateid}}-{{EnvironmentId}} - Setp 6 - Start the Environment Actions"
+  include_role: 
+    name: deployactions
+  vars:
+    action: "{{item}}"
+    ServiceType: "{{meta.ServiceType}}"
+  loop:
+    "{{resourceactions}}"
+- name: "{{templateid}}-{{EnvironmentId}} - Setp 7 - Load Output to Deploymentid variable"
+  set_fact: 
+    "{{apenvironment.deploymentid}}": "{{ lookup('file', '{{templatedeploymentfolder}}/environments/{{apenvironment.deploymentid}}/output.json') | from_json }}"
+- name: "{{templateid}}-{{EnvironmentId}} - Setp 8 - Check Template Export exist for the Environment"
+  stat:
+    path: "{{Environmenthome}}/TEMPLATES/{{templateid}}/{{apenvironment.deploymentid}}-output.j2"
+  register: stat_result
+- name: "{{templateid}}-{{EnvironmentId}} - Setp 9 - Create Template Export variable for Environment"
+  template:
+    src: "{{Environmenthome}}/TEMPLATES/{{templateid}}/{{apenvironment.deploymentid}}-output.j2"
+    dest: "{{envdeploymentfolder}}/templateoutput.yaml"
+  when: stat_result.stat.exists
+- name: "{{templateid}}-{{EnvironmentId}} - Setp 10 - Copy Template Variable Exporter Executable"
+  copy:
+    src: exporttemplateoutput.py
+    dest: "{{envdeploymentfolder}}/exporttemplateoutput.py"
+  when: stat_result.stat.exists
+- name: "{{templateid}}-{{EnvironmentId}} - Setp 11 - Execute Template Variable Exporter Executable"
+  shell: "python {{envdeploymentfolder}}/exporttemplateoutput.py {{envdeploymentfolder}}/templateoutput.yaml {{templatedeploymentfolder}}/output.json"
+  when: stat_result.stat.exists

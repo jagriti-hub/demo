@@ -1,0 +1,40 @@
+---
+ServiceId: S3-ENDPOINT-PUBLIC
+ServiceType: awscf
+EnvironmentType: Aws
+DependentEnvironments:
+  - VPC
+ParameterOptions:
+  - GetEnvironment: VPC
+    GetOutputKey: VPCID
+    ParameterKey: VPCID
+  
+  - GetEnvironment: VPC
+    GetOutputKey: PublicRouteTableId
+    ParameterKey: RouteTableId
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/s3endpointpublic.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: S3-ENDPOINT-PUBLIC
+EnvironmentName: Deploys S3 endpoint in public network.
+Description: This template deploys VPC S3 Endpoint.
+EnvironmentDocs: docs/s3endpointpublic.html
+EnvironmentGroup: ProjectEnvironments
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - CreateStack
+    - DescribeStack
+  Update:
+    - UpdateStack
+    - DescribeStack
+  Delete:
+    - DeleteStack
+    - DescribeStack
+CreditsPerHour: 0
+Limits:
+  - Public Access to S3 API from the VPC
+

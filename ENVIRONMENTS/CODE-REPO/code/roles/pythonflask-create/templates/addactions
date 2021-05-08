@@ -1,0 +1,43 @@
+#!/bin/bash
+while getopts "v:n:m:" option
+do
+   case $option in
+      v) 
+         versionidpath="/$OPTARG"
+         versionid="$OPTARG"
+         ;;
+      n)
+         actionnamepath="/$OPTARG"
+         actionname="$OPTARG"
+         ;;
+      m)
+         if [ "$OPTARG" == "GET" -o "$OPTARG" == "POST" -o "$OPTARG" == "PUT"  -o "$OPTARG" == "PATCH" -o "$OPTARG" == "DELETE" ]
+         then
+            export method=$OPTARG
+         else
+            echo "$OPTARG is not a valid method"
+         fi
+         ;;
+   esac
+done
+if [ -z "$versionid"  ]
+then
+    echo -e "Usage:\n./addactions -v <apiversion> -n <apiname> -m <GET|POST|PUT|DELETE|PATCH> "
+    exit 100
+elif [ -z "$method"  ]
+then
+    echo -e "Usage:\n./addactions -v <apiversion> -n <apiname> -m <GET|POST|PUT|DELETE|PATCH> "
+    exit 100
+elif [ -z "$actionname"  ]
+then
+    echo -e "Usage:\n./addactions -v <apiversion> -n <apiname> -m <GET|POST|PUT|DELETE|PATCH> "
+    exit 100
+elif [ -f /{{apiname}}/apiactions/$versionid-$actionname-$method.py ]
+then
+    echo "File name apiactions/$versionid-$actionname-$method.py already exist"
+    exit 101
+else
+    pathofapp=`echo $0|sed "s|/addactions||g"`
+    echo -e "@app.route('$versionidpath$actionnamepath', methods=['$method'])\ndef $actionname():\n\t#Enter your Code here\n\tsuccessmessage={'status': 200}\n\treturn(successmessage)" > $pathofapp/apiactions/$versionid-$actionname-$method.py
+    echo -e "$pathofapp/apiactions/$versionid-$actionname-$method.py is created\nEdit the file update the code for the actions"
+fi

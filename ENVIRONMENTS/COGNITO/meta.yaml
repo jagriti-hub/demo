@@ -1,0 +1,28 @@
+---
+ServiceId: COGNITO
+ServiceType: python
+EnvironmentType: Aws
+DependentEnvironments: '[]'
+ParameterOptions: '[]'
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/cognito.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: COGNITO
+EnvironmentName:  COGNITO
+Description: Python Code for creating, Describing and Deleting the cognito user pool.
+EnvironmentDocs: docs/cognito.html
+EnvironmentGroup: AUTH
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - Create
+    - Describe
+  Delete:
+    - Describe
+    - Delete
+CreditsPerHour: 0
+Limits:
+  - Python Code for creating, Describing and Deleting the cognito user pool.

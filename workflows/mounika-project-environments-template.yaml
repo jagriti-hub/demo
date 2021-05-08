@@ -1,0 +1,58 @@
+---
+workflows:
+  WorkflowId: wf-a00001
+  WorkflowName: projectenvironmentworkflow
+  Environments:
+  # - Name: VPC
+  #   parameters: default
+  #   deploymentid: 1124961
+  #   dependentenv: []
+  # - Name: CODE-COMMIT
+  #   parameters: packer
+  #   deploymentid: 1124962
+  #   dependentenv: []
+  # - Name: KEYPAIR
+  #   parameters: default
+  #   deploymentid: 1124964
+  #   dependentenv: []
+  # - Name: PUBLIC-SUBDOMAIN
+  #   parameters: mounika
+  #   deploymentid: 1124967
+  #   dependentenv: []
+  - Name: ACM-CERT-PUBLIC
+    parameters: default
+    deploymentid: 1124968
+    dependentenv:
+      - name: PUBLIC-SUBDOMAIN
+        deploymentid: 1124967
+ 
+  # - Name: NATGATEWAY
+  #   parameters: default
+  #   deploymentid: a000012
+  #   dependentenv:
+  #   - name: VPC
+  #     deploymentid: a000011
+  # - Name: S3-ENDPOINT-PUBLIC
+  #   parameters: default
+  #   deploymentid: a000013
+  #   dependentenv:
+  #   - name: VPC
+  #     deploymentid: a000011
+  # - Name: DYNDB-ENDPOINT-PUB
+  #   parameters: default
+  #   deploymentid: a000014
+  #   dependentenv:
+  #   - name: VPC
+  #     deploymentid: a000011
+  # - Name: PROJECT-KEYPAIR
+  #   parameters: default
+  #   deploymentid: a000015
+  #   dependentenv: []
+  # - Name: ECS-CLUSTER
+  #   parameters: default
+  #   deploymentid: a000016
+  #   dependentenv: []
+  # - Name: CLOUDWATCH-LOGGROUP
+  #   parameters: default
+  #   deploymentid: a000017
+  #   dependentenv: []

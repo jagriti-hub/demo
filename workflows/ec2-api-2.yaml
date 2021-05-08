@@ -1,0 +1,26 @@
+---
+DeployInfra:
+  AccountId: 865927642493
+  Region: us-east-1
+TemplateInfra:
+  AccountId: 865927642493
+  EmailId: jagriti.s@archeplay.com
+  Region: us-east-1
+  TenantId: Tenant-01
+  ProjectId: Project-01
+  templaterepo: arche-tempalte-local-jagriti
+  templateinfraregion: us-east-1
+  triggerlambda: arn:aws:lambda:us-east-1:865927642493:function:mytrigger
+  apikey: abcdefghioppp
+  apisecret: zaasdfghjkuytfvbhgvbhgv
+Environmenthome: /home/ec2-user/environment/Test/ap-environment
+deploymentversion: v1
+listoftemplates:
+  - templateid: API-EC2
+    templatedeploymentid: d60a1b025
+    parametername: default
+    dependenttemplate:
+      - name: NETWORK-PROJECT-BASE
+        DepTempId: d221600d9
+      - name: DOMAIN-CERTIFICATE-PROJECT-BASE
+        DepTempId: d05ff5ec1

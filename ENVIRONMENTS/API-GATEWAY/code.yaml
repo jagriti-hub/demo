@@ -1,0 +1,570 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+Description: This Environment deploys a rest api
+
+Metadata:
+  Architecture:
+    - Title: API-GATEWAY-ACTION
+      Image: api-gateway-action
+      Description: Architecture for api gateway.
+      
+Parameters:
+  Actions:
+    Description: Give Action/method name for rest api
+    Type: ArrayOfJSON
+    Keys:
+      HttpAction: "GET"
+      HttpAction: "POST"
+    AllowedValues: [
+      "POST",
+      "GET",
+      "PATCH",
+      "PUT",
+      "DELETE",
+      "HEAD",
+      "OPTIONS"]
+  
+Resources:
+  Create:
+    Type: boto::ApiGateway::create_rest_api
+    Metadata:
+      Description: This Python Function will Create the method and deployment
+    Code: |
+      import math,random,time,json
+      if Input["AppType"] == "pythonlambda":
+        prefix = ""
+        m = time.time()
+        sec = math.floor(m)
+        ran = random.randint(0,96764685)
+        usec = math.floor(ran * (m - sec))
+        a= usec+sec
+        x = '%3x' % (a)
+        l = list(x)
+        random.shuffle(l)
+        y = ''.join(l)
+        uniqid = prefix+y
+        iam_client = connection.client('iam')
+        apigw_client = connection.client('apigateway')
+        lambda_client = connection.client('lambda')
+        account_id = str(Input["account_id"])
+        print(type(account_id))
+        create_rest_api_fnc = apigw_client.create_rest_api(
+          name=Input["apiname"],
+          endpointConfiguration={
+            'types': [
+                Input["EndpointConfigurationTypes"]
+            ],
+          }
+        )
+        ApiGatewayRestApiId = create_rest_api_fnc['id']
+        ApiGatewayRestApiName = create_rest_api_fnc['name']
+  
+        get_resources_fnc = apigw_client.get_resources(
+          restApiId=ApiGatewayRestApiId,
+        )
+        parentApiResourceId= get_resources_fnc["items"][0]["id"]
+        output_value = []
+        # try:
+        for action in Input['apidefinition']['apiactions']:
+          json_output = {}
+          create_resource_fnc = apigw_client.create_resource(
+            restApiId=ApiGatewayRestApiId,
+            parentId=parentApiResourceId,
+            pathPart=action["actionname"]
+          )
+          ApiGatewayResourceId = create_resource_fnc['id']
+          put_method_fnc = apigw_client.put_method(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['actionmethod'],
+            authorizationType='NONE'
+          )
+          
+          put_method_response_fnc = apigw_client.put_method_response(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['actionmethod'],
+            statusCode='200',
+            responseParameters={
+                'method.response.header.Access-Control-Allow-Origin': True
+            }
+          )
+          print("success")
+          LambdaFunctionArn = "arn:aws:lambda:" + Input["AWSRegion"] + ":" + account_id + ":" + "function:" + action["lambdaname"]
+          Uri = "arn:aws:apigateway:" + Input["AWSRegion"] + ":" + "lambda:path/2015-03-31/functions/" + LambdaFunctionArn + "/invocations"
+          
+          put_integration_fnc = apigw_client.put_integration(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['actionmethod'],
+            type="AWS",
+            integrationHttpMethod='POST',
+            uri=Uri
+          )
+          put_integration_response_fnc = apigw_client.put_integration_response(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['actionmethod'],
+            statusCode='200',
+            selectionPattern=''
+          )
+          print(put_integration_response_fnc)
+          response = lambda_client.add_permission(
+            FunctionName=action['lambdaname'],
+            StatementId=uniqid,
+            Action='lambda:InvokeFunction',
+            Principal='apigateway.amazonaws.com',
+            SourceArn="arn:aws:execute-api:" + Input["AWSRegion"] + ":" + account_id + ":" + ApiGatewayRestApiId + "/*/" + action['actionmethod'] + "/" + action["actionname"],
+          )
+          json_output.update({"ApiGatewayRestApiId": ApiGatewayRestApiId})
+          json_output.update({"ApiGatewayResourceId": ApiGatewayResourceId})
+          json_output.update({"methodname": action["actionname"]})
+          json_output.update({"methodtype": action["actionmethod"]})
+          json_output.update({"InvokeURL": "https://"+ApiGatewayRestApiId+".execute-api."+Input["AWSRegion"]+".amazonaws.com/"+Input["apidefinition"]["apistage"]+"/"+action["actionname"]})
+          output_value.append(json_output)
+        assume_policy_api = json.dumps({
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Effect": "Allow",
+              "Principal": {
+                  "Service": "apigateway.amazonaws.com"
+              },
+              "Action": "sts:AssumeRole"
+            }
+          ]
+        })
+        api_cw_policy_document = json.dumps(
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Effect": "Allow",
+                "Action": [
+                    "logs:CreateLogGroup",
+                    "logs:CreateLogStream",
+                    "logs:DescribeLogGroups",
+                    "logs:DescribeLogStreams",
+                    "logs:PutLogEvents",
+                    "logs:GetLogEvents",
+                    "logs:FilterLogEvents"
+                ],
+                "Resource": "*"
+              }
+          ]}  
+        )
+        create_policy_fnc = iam_client.create_policy(
+          PolicyName=Input["apiname"]+'_cloudwatch_access_role_api',
+          PolicyDocument=api_cw_policy_document
+        )
+        policyARN = create_policy_fnc["Policy"]["Arn"]
+        create_role_fnc = iam_client.create_role(
+          RoleName=Input["apiname"]+"_cloudwatch_access_policy_api",
+          AssumeRolePolicyDocument= assume_policy_api
+        )
+        time.sleep(15)
+        rolename = create_role_fnc["Role"]["RoleName"]
+        rolearn = create_role_fnc["Role"]["Arn"]
+        print(rolearn)
+        print(policyARN)
+        print('role created')
+        attach_role_policy_fnc = iam_client.attach_role_policy(
+          RoleName=rolename,
+          PolicyArn=policyARN
+        )
+        time.sleep(10)
+        print("policyattached")
+        cloudwatch_logs_api_permission = apigw_client.update_account(
+          patchOperations=[
+            {
+              'op': 'replace',
+              'path': '/cloudwatchRoleArn',
+              'value': rolearn
+            },
+          ]
+        )
+        create_deployment_fnc = apigw_client.create_deployment(restApiId=ApiGatewayRestApiId, stageName=Input["apidefinition"]["apistage"])
+        ApiGatewayDeploymentId = create_deployment_fnc['id']
+        add_cloudwatch_logs = apigw_client.update_stage(
+          restApiId=ApiGatewayRestApiId,
+          stageName=Input["apidefinition"]["apistage"],
+          patchOperations=[
+            {
+              "op" : "replace",
+              "path" : "/*/*/logging/loglevel",
+              "value" : "INFO"
+            },
+          ]
+        )
+        create_base_path_mapping_fnc = apigw_client.create_base_path_mapping(
+          domainName=Input["DomainName"],
+          restApiId=ApiGatewayRestApiId,
+          basePath=Input["apidefinition"]["apistage"],
+          stage=Input["apidefinition"]["apistage"]
+        )
+        Outputs=[
+          {
+            "OutputKey": "apis",
+            "OutputValue": output_value
+          }]
+        OP={
+            "Outputs":Outputs,
+            "State":"Created"
+            }
+      if Input["AppType"] == "pythonflask":
+        iam_client = boto3.client('iam')
+        apigw_client = connection.client('apigateway')
+        lambda_client = connection.client('lambda')
+        account_id = str(Input["account_id"])
+        assume_role_policy_document = json.dumps({
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                },
+                "Action": "sts:AssumeRole"
+                }
+            ]
+        })
+        xray_cw_policy_document = json.dumps(
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Action": [
+                    "autoscaling:Describe*",
+                    "cloudwatch:*",
+                    "logs:*",
+                    "sns:*",
+                    "iam:GetPolicy",
+                    "iam:GetPolicyVersion",
+                    "iam:GetRole",
+                    "xray:*"
+                ],
+                "Effect": "Allow",
+                "Resource": "*"
+              },
+              {
+                "Effect": "Allow",
+                "Action": "iam:CreateServiceLinkedRole",
+                "Resource": "arn:aws:iam::*:role/aws-service-role/events.amazonaws.com/AWSServiceRoleForCloudWatchEvents*",
+                "Condition": {
+                    "StringLike": {
+                        "iam:AWSServiceName": "events.amazonaws.com"
+                    }
+                }
+              }
+            ]
+        }
+        )
+        create_policy_fnc = iam_client.create_policy(
+            PolicyName='xray_cw_policy',
+            PolicyDocument=xray_cw_policy_document,
+            Description='Policy for xray and Cloudwatch'
+        )
+        policyARN = create_policy_fnc["Policy"]["Arn"]
+        create_role_fnc = iam_client.create_role(
+            RoleName='xrayclouwatchrole',
+            AssumeRolePolicyDocument= assume_role_policy_document,
+            Description='Role for X-Ray and CloudWatch for tracing and logs',
+            Tags=[
+                {
+                    'Key': 'Name',
+                    'Value': 'xrayclouwatchrole'
+                },
+            ]
+        )
+        time.sleep(10)
+        rolename = create_role_fnc["Role"]["RoleName"]
+        attach_role_policy_fnc = iam_client.attach_role_policy(
+            RoleName=rolename,
+            PolicyArn=policyARN
+        )
+
+        vpclink = apigw_client.create_vpc_link(
+                      name=Input["apiname"],
+                      targetArns=[
+                          Input['Loadbalancerarn'],
+                      ]
+                  )
+        linkid = vpclink['id']
+        create_rest_api_fnc = apigw_client.create_rest_api(
+          name=Input["apiname"],
+          endpointConfiguration={
+            'types': [
+                Input["EndpointConfigurationTypes"]
+            ],
+          }
+        )
+        ApiGatewayRestApiId = create_rest_api_fnc['id']
+        ApiGatewayRestApiName = create_rest_api_fnc['name']
+        get_resources_fnc = apigw_client.get_resources(
+          restApiId=ApiGatewayRestApiId,
+        )
+        parentApiResourceId= get_resources_fnc["items"][0]["id"]
+        output_value = []
+        # try:
+        for action in Input['apidefinition']['apiactions']:
+          json_output = {}
+          create_resource_fnc = apigw_client.create_resource(
+            restApiId=ApiGatewayRestApiId,
+            parentId=parentApiResourceId,
+            pathPart=action["actionname"]
+          )
+          ApiGatewayResourceId = create_resource_fnc['id']
+          put_method_fnc = apigw_client.put_method(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['actionmethod'],
+            authorizationType='NONE'
+          )
+          
+          put_method_response_fnc = apigw_client.put_method_response(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['actionmethod'],
+            statusCode='200',
+            responseParameters={
+              'method.response.header.Access-Control-Allow-Origin': True
+            }
+          )
+          print("success")
+          url = Input["Loadbalancerdnsname"].lower()+ "/" + Input["apidefinition"]["apistage"] + "/" + action["actionname"]
+          put_integration_fnc = apigw_client.put_integration(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['actionmethod'],
+            type="HTTP_PROXY",
+            integrationHttpMethod=action['actionmethod'],
+            connectionType='VPC_LINK',
+            connectionId=linkid,
+            uri=url
+          )
+          put_integration_response_fnc = apigw_client.put_integration_response(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['actionmethod'],
+            statusCode='200',
+            selectionPattern=''
+          )
+          print(put_integration_response_fnc)
+          json_output.update({"ApiGatewayRestApiId": ApiGatewayRestApiId})
+          json_output.update({"ApiGatewayResourceId": ApiGatewayResourceId})
+          json_output.update({"methodname": action["actionname"]})
+          json_output.update({"methodtype": action["actionmethod"]})
+          json_output.update({"InvokeURL": "https://"+ApiGatewayRestApiId+".execute-api."+Input["AWSRegion"]+".amazonaws.com/"+Input["apidefinition"]["apistage"]+"/"+action["actionname"]})
+          output_value.append(json_output)
+        create_deployment_fnc = apigw_client.create_deployment(
+                                    restApiId=ApiGatewayRestApiId, 
+                                    stageName=Input["apidefinition"]["apistage"],
+                                    variables={
+                                        'vpcLinkId': linkid
+                                        },
+                                    tracingEnabled=True
+                                    )
+        ApiGatewayDeploymentId = create_deployment_fnc['id']
+          
+        create_base_path_mapping_fnc = apigw_client.create_base_path_mapping(
+          domainName=Input["DomainName"],
+          restApiId=ApiGatewayRestApiId,
+          basePath=Input["apidefinition"]["apistage"],
+          stage=Input["apidefinition"]["apistage"]
+        )
+          
+        Outputs=[
+          {
+            "OutputKey": "apis",
+            "OutputValue": output_value
+          },
+          {
+            "OutputKey": "VpcLinkId",
+            "OutputValue": linkid
+          },
+          {
+            "OutputKey": "RoleName",
+            "OutputValue": rolename
+          },
+          {
+            "OutputKey": "PolicyARN",
+            "OutputValue": policyARN
+          }
+          ]
+        OP={
+            "Outputs":Outputs,
+            "State":"Created"
+            }
+
+  Describe:
+    Type: boto::ApiGateway::create_domain_name
+    Metadata:
+      Description: This Python Function will Create the customDomain
+    Code: |
+      # apigw_client = connection.client('apigateway')
+      # get_rest_apis_fnc = apigw_client.get_rest_apis()
+      # print(get_rest_apis_fnc)
+      # print(get_rest_apis_fnc['items'])
+      # for item in get_rest_apis_fnc['items']:
+      #   ApiGatewayRestApiId = get_rest_apis_fnc['items'][0]['id']
+      #   ApiGatewayRestApiVersion = get_rest_apis_fnc['items'][0]['version']
+      #   ApiGatewayRestApiName = get_rest_apis_fnc['items'][0]['name']
+      #   op= [
+      #     {
+      #       "OutputKey": "ApiGatewayRestApiIdStatus",
+      #       "OutputValue": "API Exists"
+      #     },
+      #     {
+      #       "OutputKey": "ApiGatewayRestApiId",
+      #       "OutputValue": ApiGatewayRestApiId
+      #     },
+      #     {
+      #       "OutputKey": "ApiGatewayRestApiVersion",
+      #       "OutputValue": ApiGatewayRestApiVersion
+      #     },
+      #     {
+      #       "OutputKey": "ApiGatewayRestApiName",
+      #       "OutputValue": ApiGatewayRestApiName
+      #     }
+      #   ]
+      #   Outputs= Outputs+op
+      OP={
+          "State":"Running"
+          }
+  
+  Update:
+    Type: boto::ApiGateway::create_domain_name
+    Metadata:
+      Description: This Python Function will Create the customDomain
+    Code: |
+      
+      apigw_client = connection.client('apigateway')
+      for item in Outputs:
+        if item["OutputKey"] == "ApiGatewayResourceId":
+          ApiGatewayResourceId = item["OutputValue"]
+        
+        if item["OutputKey"] == "ApiGatewayRestApiId":
+          ApiGatewayRestApiId = item["OutputValue"]
+        
+        if item["OutputKey"] == "ApiGatewayDeploymentId":
+          ApiGatewayDeploymentId = item["OutputValue"]
+      
+      # response = apigw_client.update_resource(
+      #   restApiId=ApiGatewayRestApiId,
+      #   resourceId=ApiGatewayResourceId
+      # )
+      
+      try:
+        for action in Input['Actions']:
+          update_method_fnc = apigw_client.update_method(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['HttpAction']
+          )
+          
+          update_method_response_fnc = apigw_client.update_method_response(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['HttpAction'],
+            statusCode='300',
+          )
+          
+          update_integration_fnc = apigw_client.update_integration(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['HttpAction'],
+          )
+          
+          update_integration_response_fnc = apigw_client.update_integration_response(
+            restApiId=ApiGatewayRestApiId,
+            resourceId=ApiGatewayResourceId,
+            httpMethod=action['HttpAction'],
+            statusCode='300',
+          )
+          
+          update_deployment_fnc = apigw_client.update_deployment(
+            restApiId=ApiGatewayRestApiId,
+            deploymentId=ApiGatewayDeploymentId
+          )
+          
+          update_base_path_mapping_fnc = apigw_client.update_base_path_mapping(
+            domainName=Input["DomainName"],
+            basePath="/",
+          )
+          stagename = Input["apidefinition"]["apistage"]
+          Outputs=[
+            {
+              "OutputKey": "ApiGatewayRestApiId",
+              "OutputValue": ApiGatewayRestApiId
+            },
+            {
+              "OutputKey": "ApiGatewayRestApiName",
+              "OutputValue": ApiGatewayRestApiName
+            },
+            {
+              "OutputKey": "ApiGatewayRestApiVersion",
+              "OutputValue": ApiGatewayRestApiVersion
+            },
+            {
+              "OutputKey": "ApiGatewayDeploymentId",
+              "OutputValue": ApiGatewayDeploymentId
+            },
+            {
+              "OutputKey": "ApiGatewayStageName",
+              "OutputValue": stagename
+            },
+            {
+              "OutputKey": "InvokeURL",
+              "OutputValue": "https://"+ApiGatewayRestApiId+".execute-api."+Input["AWSRegion"]+".amazonaws.com/"+Input["StageName"]+"/"+Input["PathPart"]
+            },
+            {
+              "OutputKey": "ApiGatewayResourceId",
+              "OutputValue": ApiGatewayResourceId
+            }
+          ]
+          OP={
+            "Outputs":Outputs,
+            "State":"Updated"
+          }
+      except:
+        print("Method already Exists")
+        OP={
+          "State":"completed"
+          }
+  Delete:
+    Type: boto::ApiGateway::create_domain_name
+    Metadata:
+      Description: This Python Function will Create the customDomain
+    Code: |
+      import time
+      iam_client = boto3.client('iam')
+      apigw_client = connection.client('apigateway')
+      for item in Outputs:
+        if item["OutputKey"] == "VpcLinkId":
+          VpcLinkId = item["OutputValue"] 
+        if item["OutputKey"] == "RoleName":
+          rolename = item["OutputValue"] 
+        if item["OutputKey"] == "PolicyARN":
+          policyARN = item["OutputValue"] 
+      if Input["AppType"] == "pythonflask":
+        response = iam_client.detach_role_policy( RoleName=rolename, PolicyArn=policyARN )
+        delete_role_fnc = iam_client.delete_role( RoleName=rolename )
+        time.sleep(10)
+        delete_policy_fnc = iam_client.delete_policy( PolicyArn=policyARN )
+         
+      delete_base_path_mapping_fnc = apigw_client.delete_base_path_mapping(
+        domainName=Input["DomainName"],
+        basePath=Input["apidefinition"]["apistage"]
+      )
+
+      ApiGatewayRestApiId=Outputs[0]["OutputValue"][0]["ApiGatewayRestApiId"]
+      print(ApiGatewayRestApiId)
+      delete_rest_api_fnc = apigw_client.delete_rest_api(
+        restApiId=ApiGatewayRestApiId
+      )
+      if Input["AppType"] == "pythonflask":
+          vpclink = apigw_client.delete_vpc_link( vpcLinkId=VpcLinkId )
+          time.sleep(30)
+      OP={
+          "State":"Deleted"
+          }

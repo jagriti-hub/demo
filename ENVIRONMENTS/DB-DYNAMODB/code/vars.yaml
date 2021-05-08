@@ -1,0 +1,84 @@
+apiname: mytestxyz
+AppType: pythonflask
+apidefinition:
+  apistage: v1
+  apiactions:
+  - actionname: status
+    actionmethod: GET
+  - actionname: dumpproduct
+    actionmethod: PUT
+  - actionname: getallproduct
+    actionmethod: GET
+  - actionname: getproductsbyid
+    actionmethod: GET
+api:
+  type: ec2albapigw
+  ec2ami:
+    instancetype:
+    baseostype: 
+  ec2asg:
+    instancetype:
+    mininstance:
+    maxinstance:
+    threshold:
+code:
+  CodeRepoType: codecommit
+  defaultbranch: master
+  branches:
+    - dev
+    - test
+  prodbranch: master
+  testbranch: test
+db:
+  type: dynamodb
+  dynamodbtables:
+  - tablename: productdb-a1234
+    tableprefix: productdb
+    primarykey: id
+    primarykeyatt: S
+    sortkey: name
+    sortkeyatt: S
+    infra:
+      readiops: 2
+      writeiops: 2
+    datapush:
+    - filename: cart.json
+    secondarykeys:
+    - secondarykey: 'test'
+      secondarykeyatt: S
+      secondarysortkey: 'name'
+      secondarysortkeyatt: S
+      infra:
+        readiops: 1
+        writeiops: 1
+      action: Create
+    - secondarykey: 'test1'
+      secondarykeyatt: S
+      secondarysortkey: 'name'
+      secondarysortkeyatt: S
+      infra:
+        readiops: 1
+        writeiops: 1
+      action: Create
+    - secondarykey: 'test'
+      secondarykeyatt: S
+      secondarysortkey: 'name'
+      secondarysortkeyatt: S
+      infra:
+        readiops: 1
+        writeiops: 1
+      action: Delete
+apenvironment:
+  deploymentid: a1234
+  region: us-east-1
+  version: "1"
+  Action: delete
+ap:
+  templateid: tp-1234
+  tenantid: tn-1234
+  projectid: pr-1234
+  apikey: abcdefghioppp
+  apisecret: zaasdfghjkuytfvbhgvbhgv
+  triggerlambda: arn:aws:lambda:us-east-1:280111790906:function:mytrigger
+  templaterepo: arche-tempalte-local-jagriti
+  templateinfraregion: us-east-1

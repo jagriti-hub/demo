@@ -1,0 +1,58 @@
+---
+- name: "Step {{stepno}} - {{stepname}} - Executing"
+  block:
+    - name: debug stepname
+      debug:
+        var: stepname
+  
+    - name: Step - 3 Task - 1 Get Stack Status Untill Complete
+      script: cfexecdescribe.py "{{apenvironment.region}}" '{{envdeploymentfolder}}/ecsparameter.json' "ECS-CLUSTER-{{ apenvironment.deploymentid }}" "{{envdeploymentfolder}}/ecscluster.yaml" "{{ap.templaterepo}}" "{{apenvironment.deploymentid}}" "{{envdeploymentfolder}}"
+      args:
+        executable: python3
+      register: describestack
+    
+    - name: Step - 3 Task - 2 Describe the Stack
+      debug:
+        var: describestack
+    
+    - name: Task 3 register output of StackId
+      set_fact:
+        Stackoutputs: '{{describestack.stdout_lines}}'
+    
+    - debug:
+        var: Stackoutputs
+    
+    - name: get outputs from file
+      include_vars:
+        file: '{{envdeploymentfolder}}/ecsoutput.json'
+        name: opfile
+    
+    - debug:
+        var: opfile
+    
+    - debug:
+        var: opfile.Outputs
+    
+    - name: Task 4 - Stack outputs - Register the outputs
+      set_fact:
+        update_output: "true"
+        outputs:
+          - OutputKey: "{{opfile.Outputs[0].OutputKey}}"
+            OutputValue: "{{opfile.Outputs[0].OutputValue}}"
+          - OutputKey: "{{opfile.Outputs[1].OutputKey}}"
+            OutputValue: "{{opfile.Outputs[1].OutputValue}}"
+          - OutputKey: "{{opfile.Outputs[2].OutputKey}}"
+            OutputValue: "{{opfile.Outputs[2].OutputValue}}"
+          - OutputKey: "{{opfile.Outputs[3].OutputKey}}"
+            OutputValue: "{{opfile.Outputs[3].OutputValue}}"
+    - debug:
+        var: outputs
+    
+  rescue:
+    - name: "Step {{stepno}} - {{stepname}} - Faiure Message Registering"
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  "Step {{stepno}} - {{stepname}}  is failed"

@@ -1,0 +1,22 @@
+---
+DeployInfra:
+  AccountId: 932942305692
+  Region: us-east-1
+TemplateInfra:
+  AccountId: 932942305692
+  EmailId: mounika@archeplay.com
+  Region: us-east-1
+  TenantId: Tenant-01
+  ProjectId: Project-01
+  templaterepo: vishal-dev12345678
+  templateinfraregion: us-east-1
+  triggerlambda: arn:aws:lambda:us-east-1:280111790906:function:mytrigger
+  apikey: abcdefghioppp
+  apisecret: zaasdfghjkuytfvbhgvbhgv
+Environmenthome: /home/ec2-user/environment/ap-environment
+deploymentversion: v0
+listoftemplates:
+  - templateid: API-PYTHON-LAMBDA
+    templatedeploymentid: v7
+    parametername: default
+    dependenttemplate: []

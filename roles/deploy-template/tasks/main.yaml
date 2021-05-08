@@ -1,0 +1,90 @@
+- name: "{{templateid}}-TemplateStep 1 - Create Template Deployment Directory"
+  file:
+    path: "{{Environmenthome}}/workfolder/{{templatedeploymentid}}"
+    state: directory
+- name: "{{templateid}}-TemplateStep 2 - Set  Template Folder varaible"
+  set_fact:
+    templatedeploymentfolder: "{{Environmenthome}}/workfolder/{{templatedeploymentid}}"
+    templatesourcefolder: "{{Environmenthome}}/TEMPLATES/{{templateid}}"
+- name: "{{templateid}}-TemplateStep 3 - Load the Template Meta"
+  include_vars:
+    file: "{{templatesourcefolder}}/meta.yaml"
+    name: templatemeta
+- name: "{{templateid}}-TemplateStep 4 - Load the Template Parameter"
+  template:
+    src: "{{templatesourcefolder}}/parameters/{{parametername}}/parameter.j2"
+    dest: "{{templatedeploymentfolder}}/parameter.yaml"
+- name: "{{templateid}}-TemplateStep 5 - Get Parse Template Dependency Executable"
+  copy:
+    src: parsetemplatedepency.py
+    dest: "{{templatedeploymentfolder}}/parsetemplatedepency.py"
+- name: "{{templateid}}-TemplateStep 6 - Execute Parse Template Dependency"
+  shell: "python {{templatedeploymentfolder}}/parsetemplatedepency.py {{templatedeploymentfolder}}/parameter.yaml {{Environmenthome}}/workfolder/{{deptemp.DepTempId}}/output.json {{deptemp.DepTempId}}"
+  loop:
+    "{{dependenttemplate}}"
+  loop_control:
+    loop_var: deptemp
+- name: "{{templateid}}-TemplateStep 7 - Load Template Parameter to TEMPLATE variable"
+  include_vars: 
+    file: "{{templatedeploymentfolder}}/parameter.yaml"
+    name: TEMPLATE
+- name: "{{templateid}}-TemplateStep 8 - Create Template Output File"
+  copy: 
+    content: {}
+    dest: "{{templatedeploymentfolder}}/output.json"
+- name: "{{templateid}}-TemplateStep 9 - Invoke the Environment"
+  include_role: 
+    name: deployenvironment
+  vars:
+    apenvironment:
+      deploymentid: "{{Environment.DeployId}}"
+      region: "{{DeployInfra.Region}}"
+      version: "{{deploymentversion}}"
+      Action: "{{deploymentaction}}"
+    ap:
+      templateid: "{{ templatemeta.TemplateId }}"
+      tenantid: "{{ TemplateInfra.TenantId }}"
+      projectid: "{{ TemplateInfra.ProjectId }}"
+      apikey: "{{ TemplateInfra.apikey }}"
+      apisecret: "{{ TemplateInfra.apisecret }}"
+      triggerlambda: "{{ TemplateInfra.triggerlambda }}"
+      templaterepo: "{{ TemplateInfra.templaterepo }}"
+      templateinfraregion: "{{ TemplateInfra.Region }}"
+      accountid: "{{ TemplateInfra.AccountId }}"
+    ParameterFile: "{{templatesourcefolder}}/{{Environment.DeployId}}.j2"
+    OutputParameterFile: "{{templatesourcefolder}}/{{Environment.DeployId}}-output.j2"
+    EnvironmentId: "{{Environment.EnvironmentId}}"
+    dependentenv: "{{Environment.dependentenv}}"
+  loop: 
+    "{{templatemeta.Environments}}"
+  loop_control:
+    loop_var: Environment
+  when: deploymentaction == "Create" or deploymentaction == "Update"
+  
+- name: "{{templateid}}-TemplateStep 9 - Invoke the Environment"
+  include_role: 
+    name: delete-environment
+  vars:
+    apenvironment:
+      deploymentid: "{{Environment.DeployId}}"
+      region: "{{DeployInfra.Region}}"
+      version: "{{deploymentversion}}"
+      Action: "{{deploymentaction}}"
+    ap:
+      templateid: "{{ templatemeta.TemplateId }}"
+      tenantid: "{{ TemplateInfra.TenantId }}"
+      projectid: "{{ TemplateInfra.ProjectId }}"
+      apikey: "{{ TemplateInfra.apikey }}"
+      apisecret: "{{ TemplateInfra.apisecret }}"
+      triggerlambda: "{{ TemplateInfra.triggerlambda }}"
+      templaterepo: "{{ TemplateInfra.templaterepo }}"
+      templateinfraregion: "{{ TemplateInfra.Region }}"
+    ParameterFile: "{{templatesourcefolder}}/{{Environment.DeployId}}.j2"
+    OutputParameterFile: "{{templatesourcefolder}}/{{Environment.DeployId}}-output.j2"
+    EnvironmentId: "{{Environment.EnvironmentId}}"
+    dependentenv: "{{Environment.dependentenv}}"
+  loop: 
+    "{{templatemeta.Environments | reverse}}"
+  loop_control:
+    loop_var: Environment
+  when: deploymentaction == "Delete"

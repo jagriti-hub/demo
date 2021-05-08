@@ -1,0 +1,35 @@
+---
+- name: "Create EKS Cluster"
+  hosts: localhost
+  become: true
+  tasks:
+  - block:
+      - debug:
+          var: apenvironment
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: cluster
+          stepdesc: Creating EKS Cluster
+          stepno: 1
+          stepaction: create
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Running
+    rescue:
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: cluster
+          stepdesc: Creating EKS Cluster
+          stepno: 1
+          stepaction: rollback
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Failed

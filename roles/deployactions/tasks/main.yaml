@@ -1,0 +1,28 @@
+- name: "{{templateid}}-{{EnvironmentId}}-{{action}} - ActionCheckStep-1 - Execute Cloudformation Type"
+  include_role:
+    name: deploycf
+  register: cfdeploy_out
+  when: (ServiceType == "awscf") and (action == "CreateStack" or action == "DescribeStack" or action == "UpdateStack" or action == "DeleteStack" )
+- name: "{{templateid}}-{{EnvironmentId}}-{{action}} - ActionCheckStep-2 - Check ActionEnvironment Exist"
+  stat:
+    path: "{{Environmenthome}}/{{EnvironmentName}}/action.yaml"
+  register: action_stat_result
+  when: (ServiceType == "awscf") and cfdeploy_out is skipped
+
+- name: "{{templateid}}-{{EnvironmentId}}-{{action}} - ActionCheckStep-3 - Execute ActionEnvironment Actions "
+  include_role:
+    name: deploypythonactions
+  when: (ServiceType == "awscf") and cfdeploy_out is skipped and action_stat_result.stat.exists
+
+- name: "{{templateid}}-{{EnvironmentId}}-{{action}} - ActionCheckStep-4 - Execute Python Environment Actions "
+  include_role:
+    name: deploypython
+  when: ServiceType == "python"
+- name: "{{templateid}}-{{EnvironmentId}}-{{action}} - ActionCheckStep-5 - Execute ECS Environment Actions "
+  include_role:
+    name: deployecs
+  when: ServiceType == "ecs"
+- name: "{{templateid}}-{{EnvironmentId}}-{{action}} - ActionCheckStep-6 - Execute Ansibel Environment Actions "
+  include_role:
+    name: deploy-ansible
+  when: ServiceType == "ansible"

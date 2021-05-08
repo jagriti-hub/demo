@@ -1,0 +1,8 @@
+- name: Step {{stepno}} - {{stepname}} - Task 1 - dynamodb -  Update Secondary Key in DynamoDB Table
+  include_tasks:
+    file: seckeyupdate.yaml
+  loop:
+    "{{table.secondarykeys}}"
+  loop_control:
+    loop_var: secondarykey
+  register: secondarykeycreate

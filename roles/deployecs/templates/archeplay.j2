@@ -1,0 +1,12 @@
+import json,datetime,boto3, sys, os
+from botocore.exceptions import ClientError
+from boto3 import session
+from botocore.config import Config
+with open('{{datafile}}') as json_file:
+    data = json.load(json_file)
+    print(type(data))
+    if "CreditsPerHour" in data:
+        data['CreditsPerHour']=int(data['CreditsPerHour'])
+    dynamodb = boto3.resource('dynamodb',region_name='{{region}}')
+    envdb=dynamodb.Table("{{tablename}}")
+    envdb.put_item(Item=data)

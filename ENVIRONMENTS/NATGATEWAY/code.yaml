@@ -1,0 +1,67 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description:  This template deploys a NatGateway.
+Metadata:
+  Architecture:
+    - Title: natgateway
+      Image: image1
+      Description: Architecture for Vpc NatGateway
+
+Parameters:
+  PublicSubnetId:
+    Description: Public subnet id is a dependent parameter and will be taken from the VPC environment.
+    Type: String
+
+  NatgatewayRoute:
+    Description: Destination CIDR for private route.
+    Type: String
+    Default: 0.0.0.0/0
+  
+  PrivateRouteTableId:
+    Description: Private Route Table id is dependent parameter and will be taken from VPC environment. 
+    Type: String
+
+Resources:
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Metadata:
+      Description: This will deploy a elastic ip.
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Metadata:
+      Description: This Resource will deploy a NatGateway so that private subntes can be exposed to internet.
+    Properties:
+      AllocationId: !GetAtt NatGatewayEIP.AllocationId
+      SubnetId: 
+        Ref: PublicSubnetId
+
+  PrivateRoute:
+    Type: AWS::EC2::Route
+    Metadata:
+      Description: Route for private subntes where it's traffic is directed.
+    Properties:
+      RouteTableId: 
+        Ref: PrivateRouteTableId
+      DestinationCidrBlock: 
+        Ref: NatgatewayRoute
+      NatGatewayId: !Ref NatGateway
+
+Outputs:
+  NatGateway:
+    Description: Natgateway id which is deployed in this template. 
+    Value: !Ref NatGateway
+  
+  NatAllocationId:
+    Description: Natgateway EIP allocation id which is deployed in this template.
+    Value: 
+      Fn::GetAtt: NatGatewayEIP.AllocationId
+  
+  NatEIP:
+    Description: Natgateway EIP which is deployed in this template.
+    Value: 
+      Ref: NatGatewayEIP
+
+  

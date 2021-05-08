@@ -1,0 +1,241 @@
+---
+Description: For autoscaling
+    
+Parameters:
+  InstanceType:
+    Description: Type EC2 instance to lauch.
+    Type: String
+    Default: t3a.medium
+  
+  KeyName:
+    Description: Existing EC2 KeyPair to enable SSH access to the instance
+    Type: String
+    ConstraintDescription: must be the name of an existing EC2 KeyPair.
+  
+  VPCID:
+    Description: VPC ID on which EC2 is running. This value comes from the Dependent Environment VPC
+    Type: String
+  
+  PrivateSubnet1ID:
+    Description: First Private subnet ID on which EC2 is running. This value comes from the Dependent Environment VPC
+    Type: String
+  
+  PrivateSubnet2ID:
+    Description: Second Private subnet ID on which EC2 is running. This value comes from the Dependent Environment VPC
+    Type: String
+  
+  AMIId:
+    Description: AMI Id from image build
+    Type: String
+  
+  MinSizeASGs:
+    Description: Minimum number of instances to be launched in EC2 AutoScaling.
+    Type: Number
+    Default: 2
+    
+  DesiredCapacityASG:
+    Description: Desired number of instances to be launched in EC2 AutoScaling.
+    Type: Number
+    Default: 2
+  
+  MaxSizeASGs:
+    Description: Maximum number of instances to be launched in EC2 AutoScaling.
+    Type: Number
+    Default: 3
+  
+  AutoscalingTargetValue:
+    Description: CPU Utilization percentage on which AutoScaling is triggered.
+    Type: Number
+    Default: 70
+  
+  ASGCoolDown:
+    Description: ASG will wait for cooldown seconds before scaling down the instances.
+    Type: Number
+    Default: 300
+  
+  EstimatedInstanceWarmup:
+    Description: EstimatedInstanceWarmup for EC2 instances when scale up
+    Type: Number
+    Default: 60
+  
+  EmailAddress:
+    Description: When EC2 uses max of Avg CPU utilisation, AutoScalingGroup launches the EC2 and an email is sent EC2 Scaling.
+    Type: String
+    Default: example@example.com
+  
+Resources:
+  ECSAutoscalingRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      Description: IAM Role for the ECS to autoscale using cloudwatch alarms.
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - autoscaling.amazonaws.com
+            Action:
+              - sts:AssumeRole
+      Path: "/"
+      Policies:
+        - PolicyName:
+            Fn::Sub: ${AWS::StackName}-ASG-Policy
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - autoscaling:*
+                  - cloudwatch:DescribeAlarms
+                  - cloudwatch:PutMetricAlarm
+                  - ecs:DescribeServices
+                  - ecs:UpdateService
+                  - logs:*
+                Resource: "*"
+  ASGMonitoringRole:
+    Type: AWS::IAM::Role
+    Metadata:
+      Description: IAM Role for the monitoring.
+    Properties: 
+      AssumeRolePolicyDocument: 
+        Version: "2012-10-17"
+        Statement: 
+          - 
+            Effect: "Allow"
+            Principal: 
+              Service: 
+                - "ec2.amazonaws.com"
+            Action: 
+              - "sts:AssumeRole"
+      RoleName:
+        Fn::Sub: ${AWS::StackName}-Role
+      Policies:
+        - PolicyName:
+            Fn::Sub: amiinstancerole-xraycw
+          PolicyDocument:
+            Statement:
+              - Effect: Allow
+                Action:
+                  - xray:*
+                  - logs:*
+                Resource: "*"
+  ASGALBPublicInstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Metadata:
+      Description: IAM Role for the EC2 in the autoscaling group.
+    Properties:
+      Roles: 
+        - Ref: ASGMonitoringRole
+  ASGSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Metadata:
+      Description: SecurityGroup.
+    Properties:
+      GroupDescription: Allow http to client host
+      VpcId:
+        Ref: VPCID
+      SecurityGroupIngress:
+      - IpProtocol: tcp
+        FromPort: 80
+        ToPort: 80
+        CidrIp: 0.0.0.0/0
+  LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Metadata:
+      Description: LaunchTemplate for the EC2 instances for the AutoScaling Group.
+    Properties:
+      LaunchTemplateData:
+        InstanceType:
+          Ref: InstanceType
+        DisableApiTermination: 'true'
+        KeyName: 
+          Ref: KeyName
+        ImageId:
+          Ref: AMIId
+        SecurityGroupIds:
+          - Ref: ASGSecurityGroup
+        IamInstanceProfile:
+          Name:
+            Ref: ASGALBPublicInstanceProfile
+      LaunchTemplateName: 
+        Fn::Sub: "${AWS::StackName}-LaunchTemplate"
+  ASGALBPublicSNSTopic:
+    Type: AWS::SNS::Topic
+    Metadata:
+      Description: SNS Topic for the AutoScalingGroup's EC2 instances when there is status change in EC2 instances.
+    Properties:
+      TopicName:
+        Fn::Sub: ${AWS::StackName}-Public
+      Subscription:
+        - Protocol: email
+          Endpoint: 
+            Ref: EmailAddress
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Metadata:
+      Description: AutoScaling Group of the Product Service.
+    Properties:
+      AutoScalingGroupName: 
+        Fn::Sub: "${AWS::StackName}-AutoscalingGroup"
+      Cooldown:
+        Ref: ASGCoolDown
+      DesiredCapacity:
+        Ref: DesiredCapacityASG
+      LaunchTemplate: 
+        LaunchTemplateId: 
+          Ref: LaunchTemplate
+        Version: !GetAtt LaunchTemplate.LatestVersionNumber
+      MaxSize:
+        Ref: MaxSizeASGs
+      MinSize:
+        Ref: MinSizeASGs
+      Tags:
+        - 
+          Key: Name
+          Value:
+            Fn::Sub: "${AWS::StackName}-AutoscalingGroup"
+          PropagateAtLaunch: 'true'
+      VPCZoneIdentifier: 
+        -
+          Ref: PrivateSubnet1ID
+        - 
+          Ref: PrivateSubnet2ID
+      
+      NotificationConfigurations: 
+        - NotificationTypes: 
+            - autoscaling:EC2_INSTANCE_LAUNCH
+            - autoscaling:EC2_INSTANCE_LAUNCH_ERROR
+            - autoscaling:EC2_INSTANCE_TERMINATE
+            - autoscaling:EC2_INSTANCE_TERMINATE_ERROR
+          TopicARN:
+            Ref: ASGALBPublicSNSTopic
+  AutoScalingGroupPolicy:
+    Type: AWS::AutoScaling::ScalingPolicy
+    Metadata:
+      Description: AutoScaling Group Policy with the Average CPU Utilization to scale up or scale down
+    Properties: 
+      AdjustmentType: ChangeInCapacity
+      Cooldown:
+        Ref: ASGCoolDown
+      EstimatedInstanceWarmup:
+        Ref: EstimatedInstanceWarmup
+      AutoScalingGroupName:
+        Ref: AutoScalingGroup
+      PolicyType: TargetTrackingScaling
+      TargetTrackingConfiguration: 
+          DisableScaleIn: False
+          PredefinedMetricSpecification:
+             PredefinedMetricType: ASGAverageCPUUtilization
+          TargetValue:
+            Ref: AutoscalingTargetValue
+  ASGALBPublicSNSTopic:
+    Type: AWS::SNS::Topic
+    Metadata:
+      Description: SNS Topic for the AutoScalingGroup's EC2 instances when there is status change in EC2 instances.
+    Properties:
+      TopicName:
+        Fn::Sub: ${AWS::StackName}-Public
+      Subscription:
+        - Protocol: email
+          Endpoint: 
+            Ref: EmailAddress

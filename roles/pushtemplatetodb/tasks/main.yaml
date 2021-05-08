@@ -1,0 +1,27 @@
+---
+- name: Set the Folder code push execution
+  set_fact:
+    deploymentfolder: "{{Environmenthome}}/workfolder/{{TemplateId}}"
+- name: Create a the deployment folder
+  file:
+    path: "{{deploymentfolder}}"
+    state: directory
+    mode: '0755'
+- copy:
+    src: generatetemplate.py
+    dest: "{{deploymentfolder}}/generatetemplate.py"
+- name: Combine Environment Parameters and Outputs to Template
+  shell: "python {{deploymentfolder}}/generatetemplate.py {{Environmenthome}}/TEMPLATES/{{TemplateId}}/meta.yaml {{deploymentfolder}}/template.json {{Environmenthome}}/TEMPLATES/{{TemplateId}}"
+- name: Setting the Table name and file name for Service
+  set_fact:
+    datafile: "{{deploymentfolder}}/template.json"
+    tablename: "{{templatetablename}}"
+- name: Create Service DB push script
+  template:
+    src: archeplay.j2
+    dest: "{{deploymentfolder}}/template.py"
+
+- name: push environment service data to DB
+  script: "{{deploymentfolder}}/template.py"
+  args:
+    executable: python3

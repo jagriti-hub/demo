@@ -1,0 +1,37 @@
+- name:  Task 10 - deployapi-getapppkg - download the package from package repo
+  amazon.aws.aws_s3:
+    bucket: "{{ap.templaterepo}}"
+    region: "{{apenvironment.region}}"
+    object: "/packages/{{apiname}}-{{apenvironment.version}}.zip"
+    dest: "/tmp/{{apiname}}-{{apenvironment.version}}.zip"
+    mode: get
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+  register: getapppkg
+  delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+- name: Task 11 - deployapi-deploypkg -  unzip the packages
+  unarchive:
+    remote_src: yes
+    src: "/tmp/{{apiname}}-{{apenvironment.version}}.zip"
+    dest: "/{{apiname}}"
+  register: deploypkg
+  delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+- name: Task 12 - deployapi-removezipfile -  unzip the packages
+  file:
+    path: "/tmp/{{apiname}}-{{apenvironment.version}}.zip"
+    state: absent
+  register: removezipfile
+  delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+- name: Task 13 - deployapi-createvirtualenv - create the initial virtualenv
+  command:
+    cmd: "/usr/local/bin/virtualenv /{{apiname}}/venv -p python3"
+    creates: "/{{apiname}}/venv"
+  register: createvirtualenv
+  delegate_to: "{{createinstance.instances[0].public_ip_address}}"
+- name: Task 14 - deployapi-apppythonmodules - Install app python Modules
+  pip: 
+    requirements: "/{{apiname}}/requirement.txt"
+    virtualenv: "/{{apiname}}/venv"
+    virtualenv_python: python3
+  register: apppythonmodules
+  delegate_to: "{{createinstance.instances[0].public_ip_address}}"

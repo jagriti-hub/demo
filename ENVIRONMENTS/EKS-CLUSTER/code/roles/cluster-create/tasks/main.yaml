@@ -1,0 +1,76 @@
+---
+- name: Step {{stepno}} - {{stepname}} - Executing
+  block:
+    - name:  Step {{stepno}} - {{stepname}} - Task 1 - createpolicy - Create Lb ingress policy from template
+      community.aws.iam_managed_policy:
+        policy_name: "ingress-controller"
+        policy_description: "A Helpful managed policy"
+        policy: "{{ lookup( 'template', 'lbpolicy.json.j2') }}"
+        state: present
+      register: createpolicy
+          
+    - name: Step {{stepno}} - {{stepname}} - Task 2 - Load cluster config file
+      template:
+        src: "eksctl.yaml.j2"
+        dest: "/tmp/eksctl.yaml"
+        mode: 0755
+    
+    - name: Step {{stepno}} - {{stepname}} - Task 3 - Load rabc-role file
+      template:
+        src: "rabc-role.yaml.j2"
+        dest: "/tmp/rabc-role.yaml"
+        mode: 0755
+    
+    - name: Step {{stepno}} - {{stepname}} - Task 4 - Load cluster config file
+      template:
+        src: "role-binding.yaml.j2"
+        dest: "/tmp/role-binding.yaml"
+        mode: 0755
+    
+    - name:  Step {{stepno}} - {{stepname}}  - Task 5 - Create Eks Cluster using eksctl
+      shell: |
+        /usr/local/bin/eksctl create cluster -f /tmp/eksctl.yaml --timeout 60m --verbose=4 > "{{envdeploymentfolder}}/ekscltlog"
+      register: eksctl
+      async: 1800
+      poll: 0
+        
+    - name:  Step {{stepno}} - {{stepname}}  - Task 6 - Check if stack creation is initiated or not and describe
+      script: describestack.py "{{apenvironment.region}}" "eksctl-{{ClusterName}}-cluster" "{{envdeploymentfolder}}"
+      args:
+        executable: python3
+      register: describe
+      
+    - name:  Step {{stepno}} - {{stepname}}  - Task 7 - Kubectl config and get nodes
+      shell: |
+        /usr/bin/kubectl get all -o json > ekssuccess.json
+    
+    - name:  Step {{stepno}} - {{stepname}}  - Task 8 - Create metrics server
+      shell: |
+        /usr/bin/kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.6/components.yaml
+    
+    - name:  Step {{stepno}} - {{stepname}}  - Task 9 - Create rabs-role and role-binding for eks cluster
+      shell: |
+        /usr/bin/kubectl apply -f /tmp/rabc-role.yaml
+        /usr/bin/kubectl apply -f /tmp/role-binding.yaml
+    
+    - name:  Step {{stepno}} - {{stepname}}  - Task 10 - Create service account
+      shell: |
+        /usr/local/bin/eksctl create iamserviceaccount --name ingress-controller --namespace kube-system --cluster "{{ClusterName}}" --attach-policy-arn "arn:aws:iam::{{ap.accountid}}:policy/ingress-controller" --approve --override-existing-serviceaccounts --region "{{apenvironment.region}}"
+    
+    - name: Step {{stepno}} - {{stepname}}  - Task 11 - Register the outputs
+      set_fact:
+        update_output: "true"
+        outputs:
+        - OutputKey: ClusterName
+          OutputValue: "{{ClusterName}}"
+        - OutputKey: PolicyArn
+          OutputValue: "arn:aws:iam::{{ap.accountid}}:policy/ingress-controller"
+          
+  rescue:
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed

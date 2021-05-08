@@ -1,0 +1,23 @@
+- name: Step {{stepno}} - {{stepname}} - Task 8-1  - parsetable1 - parse table config without  sort key
+  copy:
+    content: |
+      {{table.tableprefix}} = "{{table.tablename}}"
+      {{table.tableprefix}}_primarykey = "{{table.primarykey}}"
+    dest: "/tmp/{{apiname}}/dbconf/{{table.tableprefix}}.py"
+  when: table.sortkeyexist is false
+  register: parsetable1
+- name: Step {{stepno}} - {{stepname}} - Task 8-2 - parsetable2 - parse table config with sort key
+  copy:
+    content: |
+      {{table.tableprefix}} = "{{table.tablename}}"
+      {{table.tableprefix}}_primarykey = "{{table.primarykey}}"
+      {{table.tableprefix}}_sortkey = "{{table.sortkey}}"
+    dest: "/tmp/{{apiname}}/dbconf/{{table.tableprefix}}.py"
+  when: table.sortkeyexist is true
+  register: parsetable2
+- name: Step {{stepno}} - {{stepname}} - Task 9 - parsesecondarykey - parse table config with Secondary Keys
+  include_tasks: parsesecondarykey.yaml
+  loop: 
+    "{{table.secondarykeys}}"
+  loop_control:
+    loop_var: secondarykey

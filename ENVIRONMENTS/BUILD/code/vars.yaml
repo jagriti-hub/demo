@@ -1,0 +1,76 @@
+{
+  "apiname": "mytestxyz",
+  "apidefinition": {
+    "apistage": "v1.0",
+    "apiactions": [
+      {
+        "actionname": "status",
+        "actionmethod": "GET"
+      },
+      {
+        "actionname": "dumpproduct",
+        "actionmethod": "PUT"
+      },
+      {
+        "actionname": "getallproduct",
+        "actionmethod": "GET"
+      },
+      {
+        "actionname": "getproductsbyid",
+        "actionmethod": "GET"
+      }
+    ]
+  },
+  "build": {
+    "buildtool": "ziparchive",
+    "image": {
+      "type": "ec2ami",
+      "instance_type": "t2.micro"
+    }
+  },
+  "tables": [
+    {
+      "tablename": "productdb-a1234",
+      "tableprefix": "productdb",
+      "primarykey": "id",
+      "sortkey": "map",
+      "sortkeyexist": true,
+      "secondarykeys": [
+        {
+          "secondarykey": "id",
+          "secondarysortkey": "map",
+          "secondarysortkeyexist": true
+        }
+      ]
+    }
+  ],
+  "code": {
+    "CodeRepoType": "codecommit",
+    "branches": [
+      "dev",
+      "test"
+    ]
+  },
+  "AppType": "pythonflask",
+  "apenvironment": {
+    "deploymentid": "a1234",
+    "region": "us-east-1",
+    "version": "v1.0",
+    "Action": "create"
+  },
+  "ap": {
+    "templateid": "tp-1234",
+    "tenantid": "tn-1234",
+    "projectid": "pr-1234",
+    "apikey": "abcdefghioppp",
+    "apisecret": "zaasdfghjkuytfvbhgvbhgv",
+    "triggerlambda": "arn:aws:lambda:us-east-1:280111790906:function:mytrigger",
+    "templaterepo": "mohan-test-code-python",
+    "templateinfraregion": "us-east-1"
+  },
+  "cloneurl": "https://git-codecommit.us-east-1.amazonaws.com/v1/repos/mytestxyz",
+  "branchname": "master",
+  "vpcid": "vpc-0f2f76ec085c361fc",
+  "subnetid": "subnet-0480695b3e4d69332",
+  "amiid": "ami-04d29b6f966df1537"
+}

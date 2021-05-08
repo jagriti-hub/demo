@@ -1,0 +1,74 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description: Environment deploys a RDS MYSQL Read Replica.
+Metadata:
+  Architecture{{deploymentid}}:
+    - Title: reda replica
+      Image: mysqlreadreplica
+      Description: Architecture for MySQL read replica.
+      
+Parameters:
+  SourceDBinstanceidentifier{{deploymentid}}:
+    Type: String
+    Description: Source RDS MySQL Db instance identifier from which read replica will be created. It is dependent on RDS-MYSQL environment.
+  
+  DBInstanceClass{{deploymentid}}:
+    Type: String
+    Description: Type of Instance Class which will be same as choosen in RDS-MYSQL environment. it is dependent parameter.
+  
+  StorageType{{deploymentid}}:
+    Type: String
+    Description: Storage type which is used in master mysql db instance. it is dependent parameter.
+  
+  Storagesize{{deploymentid}}:
+    Type: String
+    Description: Storage size that was used to craete master mysql db instance. it is a dependent parameter.
+  
+  Iops{{deploymentid}}:
+    Type: String
+    Description: value of iops will be taken from RDS-MYSQL environment. 
+
+Conditions:
+  storagetypeio1: 
+    Fn::Equals:
+    - Ref: StorageType{{deploymentid}}
+    - io1
+
+Resources:
+  ReadReplica{{deploymentid}}:
+    Type: AWS::RDS::DBInstance
+    Metadata:
+      Description: Here a MYSQL Read Replica will be deployed.
+    Properties:
+      SourceDBInstanceIdentifier: 
+        Ref: SourceDBinstanceidentifier{{deploymentid}}
+      DBInstanceClass: 
+        Ref: DBInstanceClass{{deploymentid}}
+      StorageType: 
+        Ref: StorageType{{deploymentid}}
+      AllocatedStorage:
+        Ref: Storagesize{{deploymentid}}
+      Iops:
+        Fn::If: 
+          - storagetypeio1
+          - Ref: Iops{{deploymentid}}
+          - Ref: "AWS::NoValue"
+      Tags:
+      - Key: Name
+        Value: Read Replica Database
+
+Outputs:
+  DbEndpoint{{deploymentid}}:
+    Description: Hostname of the MySQL Instance.
+    Value:
+      Fn::GetAtt: ReadReplica{{deploymentid}}.Endpoint.Address
+  
+  DatabasePort{{deploymentid}}:
+    Description: The port number on which MySQL is running.
+    Value:
+      Fn::GetAtt: ReadReplica{{deploymentid}}.Endpoint.Port
+  
+  StackName{{deploymentid}}:
+    Description: Cloudformation Stack Name of the database.
+    Value: 
+      Fn::Sub: "${AWS::StackName}"

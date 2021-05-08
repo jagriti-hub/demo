@@ -1,0 +1,89 @@
+---
+- name: "Create Code Repo for the Archeplay Template"
+  hosts: localhost
+  become: true
+  tasks:
+  - block:
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: codecommit
+          stepdesc: Create Code Commit Repository
+          stepno: 1
+          stepaction: create
+        when: code.CodeRepoType == "codecommit"
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: pythonflask
+          stepdesc: Bootstrap Pythonflask code to Code Repo
+          stepno: 2
+          stepaction: create
+        when: AppType == "pythonflask"
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: pythonlambda
+          stepdesc: Bootstrap pythonlambda code to Code Repo
+          stepno: 2
+          stepaction: create
+        when: AppType == "pythonlambda"
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: commitandpushcode
+          stepdesc: Bootstrap pythonlambda code to Code Repo
+          stepno: 3
+          stepaction: create
+        when: AppType == "pythonlambda"
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: commitandpushcode
+          stepdesc: Bootstrap Pythonflask code to Code Repo
+          stepno: 3
+          stepaction: create
+        when: AppType == "pythonflask"
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: branches
+          stepdesc: Create Branches
+          stepno: 4
+          stepaction: create
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: codecommittrigger
+          stepdesc: Create Code Commit Trigger on commit
+          stepno: 5
+          stepaction: create
+        when: code.CodeRepoType == "codecommit"
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Running
+    rescue:
+      - name: Execute rollback Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: codecommit
+          stepdesc: Create Code Commit Repository
+          stepno: 1
+          stepaction: rollback
+        when: code.CodeRepoType == "codecommit" and not codecommitexist
+      
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Failed

@@ -1,0 +1,45 @@
+import json,boto3,os,time
+from boto3 import session
+os.environ['AWS_DEFAULT_REGION']="{{region}}"
+action="{{action}}"
+template={{actiontemplate|to_json}}
+code=template['Actions'][action]['Code']
+
+Input= {{envparameter|to_json}}
+with open ('{{outputfile}}') as f:
+	outputs=f.read()
+js_outputs = json.loads(outputs)
+Outputs=[]
+for j,v in js_outputs.items():
+	a={}
+	a['OutputKey']=j
+	a['OutputValue']=v
+	Outputs.append(a)
+connection=boto3
+response={}
+code=code+"\nresponse=OP"
+
+if 'Describe' in action:
+	exec(code)
+	if 'State' in response and response['State'] in ['Provisioning']:
+		while response['State'] in ['Provisioning']:
+			time.sleep(30)
+			exec(code)
+			print(response)
+			if "Outputs" in response:
+				final_output={}
+				for out in Outputs:
+					final_output[out['OutputKey']]=out['OutputValue']
+				with open ('{{outputfile}}',"w+") as f:
+					json.dump(final_output, f, indent = 6)
+					f.close()
+else:
+	exec(code)
+	print(response)
+	if "Outputs" in response:
+	    final_output={}
+	    for out in Outputs:
+	    	final_output[out['OutputKey']]=out['OutputValue']
+	    with open ('{{outputfile}}',"w+") as f:
+		    json.dump(final_output, f, indent = 6) 
+		    f.close()

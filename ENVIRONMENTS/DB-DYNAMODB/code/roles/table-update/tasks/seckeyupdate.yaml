@@ -1,0 +1,5 @@
+- name: Step {{stepno}} - {{stepname}} - Task 1 - updatetable-{{secondarykey.secondarykey}} - {{secondarykey.action}}
+  script: updatetable.py "{{table}}" "{{apenvironment.region}}" "{{secondarykey}}"
+  args:
+    executable: python3
+  register: secondarykeycreate

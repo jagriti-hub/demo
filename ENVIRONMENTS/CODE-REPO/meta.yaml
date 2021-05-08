@@ -1,0 +1,31 @@
+---
+ServiceId: CODE-REPO
+ServiceType: ansible
+EnvironmentType: Aws
+EnvironmentName: Git Repository in AWS Code commit
+EnvironmentId: CODE-REPO
+Description: Git Repository in AWS Code commit
+DependentEnvironments: []
+ParameterOptions: []
+OutputOptions: []
+Input:
+  Templatekey: Aws/coderepo.zip
+UsageType: Permanent
+CostType: Nocost
+EnvironmentDocs: docs/codecommit.html
+EnvironmentGroup: Docker
+ActionEnvironment: "Null"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - Build
+    # - DescribeBuild
+  Delete:
+    - Build
+    # - DescribeBuild
+CreditsPerHour: 0
+Limits:
+  - Repositories can be created
+
+    
+   

@@ -1,0 +1,47 @@
+---
+- name: Step {{stepno}} - {{stepname}} - Executing
+  block:
+    - name: Step {{stepno}} - {{stepname}} - Task 1 - Load cluster config file
+      template:
+        src: "eksctl.yaml.j2"
+        dest: "/tmp/eksctl.yaml"
+        mode: 0755
+    
+    - name: Step {{stepno}} - {{stepname}} - Task 2 - Load rabc-role file
+      template:
+        src: "rabc-role.yaml.j2"
+        dest: "/tmp/rabc-role.yaml"
+        mode: 0755
+    
+    - name: Step {{stepno}} - {{stepname}} - Task 3 - Load cluster config file
+      template:
+        src: "role-binding.yaml.j2"
+        dest: "/tmp/role-binding.yaml"
+        mode: 0755
+        
+    - name:  Step {{stepno}} - {{stepname}}  - Task 4 - create policy for ingress controller
+      shell: |
+        aws eks update-kubeconfig --name "{{ClusterName}}" --region "{{apenvironment.region}}"
+        /usr/bin/kubectl delete -f /tmp/rabc-role.yaml
+        /usr/bin/kubectl delete -f /tmp/role-binding.yaml
+        /usr/bin/kubectl delete -f https://github.com/kubernetes-sigs/metrics-server/releases/download/v0.3.6/components.yaml
+        /usr/local/bin/eksctl delete cluster -f /tmp/eksctl.yaml
+    
+    - name:  Step {{stepno}} - {{stepname}} - Task 5 - createpolicy - Create Lb ingress policy from template
+      community.aws.iam_managed_policy:
+        policy_name: "ingress-controller"
+        state: absent
+      register: deletepolicy
+      
+    - name: Step {{stepno}} - {{stepname}}  - Task 6 - Register the outputs
+      set_fact:
+        update_output: "false"
+        outputs: []
+  rescue:
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed

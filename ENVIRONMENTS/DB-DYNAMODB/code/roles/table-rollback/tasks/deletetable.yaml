@@ -1,0 +1,10 @@
+- name: Step {{stepno}} - {{stepname}} - Task 1 - deletetable-{{table.tablename}} -  Delete DynamoDB Table
+  script: deletetable.py "{{table}}" "{{apenvironment.region}}"
+  args:
+    executable: python3
+  register: deletetable
+- name: Step {{stepno}} - {{stepname}} - Task 2 - deletepolicy - Delete Dynamodb access Policy 
+  community.aws.iam_managed_policy:
+    policy_name: "{{table.tablename}}-dynamodbrole"
+    state: absent
+  register: deletepolicy

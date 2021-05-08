@@ -1,0 +1,36 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description:  This template deploys cloudwatch log group for the services for storing the generated logs.
+
+Metadata:
+  Architecture:
+    - Title: CLOUDWATCH-LOGGROUP
+      Image: image1
+      Description: Architecture for CLOUDWATCH-LOGGROUP
+
+Parameters:
+  UserEnvironmentName:
+    Description: An environment name that is prefixed to resource names
+    Type: String
+    Default: CLOUDWATCH-LOGGROUP
+  
+Resources:
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Metadata:
+      Description: A LogGroup to store Logs.
+    Properties: 
+      LogGroupName:
+        Fn::Sub: ${AWS::StackName}-log-group
+      RetentionInDays: 1
+      
+Outputs:      
+  LogGroupName:
+    Description: Name of the LogGroup
+    Value:
+      Ref: LogGroup
+  
+  LogGroupArn:
+    Description: Arn of cloudwatch log group
+    Value:
+      Fn::GetAtt: LogGroup.Arn

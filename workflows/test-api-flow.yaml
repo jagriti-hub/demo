@@ -1,0 +1,21 @@
+---
+workflows:
+  WorkflowId: wf-11111
+  WorkflowName: amibuildworkflow
+  Environments:
+  - Name: VPC
+    parameters: default
+    deploymentid: 11a111
+    dependentenv: []
+  - Name: NATGATEWAY
+    parameters: default
+    deploymentid: 11a112
+    dependentenv:
+      - name: VPC
+        deploymentid: 11a111
+  - Name: IMAGEBUILD-AMI
+    parameters: default
+    deploymentid: 11a113
+    dependentenv:
+      - name: VPC
+        deploymentid: 11a111

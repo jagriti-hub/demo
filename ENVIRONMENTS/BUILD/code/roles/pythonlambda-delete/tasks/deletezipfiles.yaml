@@ -1,0 +1,17 @@
+---
+- name: This command will delete ecr repository
+  shell: "aws ecr delete-repository --repository-name {{function.name}} --force --region {{apenvironment.region}}"
+# - name: delete ecr repository
+#   community.aws.ecs_ecr:
+#     name: "{{function.name}}"
+#     state: absent
+#     region: "{{apenvironment.region}}"
+# - name: Step {{stepno}} - {{stepname}}  - Task 2 - lambdaoutput - Register the outputs
+#   set_fact:
+#     lambdazipfilecurrent: "{ '{{function.name}}': 'lambdapackage/{{apenvironment.deploymentid}}/{{function.name}}.zip' }"
+# - name: "Append dict: execute append"
+#   set_fact:
+#     lambdazipfile: "{{ lambdazipfile | combine( lambdazipfilecurrent ) }}"
+# - name: Print version
+#   debug:
+#     msg: "Ansible Version: {{ buildoutput.stdout }}"

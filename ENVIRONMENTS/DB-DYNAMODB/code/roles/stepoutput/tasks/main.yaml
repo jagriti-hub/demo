@@ -1,0 +1,23 @@
+- name: Task 1 - Check if output.json exist
+  stat:
+    path: "{{envdeploymentfolder}}/output.json"
+  register: stat_result
+- name: Task 2 - Create output.json file, if it doesnt exist already
+  copy:
+    content: "{ 'outputs': [] }"
+    dest: "{{envdeploymentfolder}}/output.json"
+  when: not stat_result.stat.exists
+- name: Task 3 - load the output.json to a variable
+  include_vars:
+    file: "{{envdeploymentfolder}}/output.json"
+    name: outputfile 
+- name: Task 4 - Record Task Outputs
+  copy:
+    content: "{ 'outputs': {{ outputfile.outputs + outputs }} }"
+    dest: "{{envdeploymentfolder}}/output.json" 
+- name: Task 5 - Publish Output and Events
+  amazon.aws.aws_s3:
+    bucket: "{{ap.templaterepo}}"
+    object: "outputs/{{apenvironment.deploymentid}}/output.json"
+    src: "{{envdeploymentfolder}}/output.json"
+    mode: put

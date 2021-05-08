@@ -1,0 +1,88 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description:  This template deploys an ECS Cluster.
+Metadata:
+  Architecture:
+    - Title: ecs cluster
+      Image: image1
+      Description: Architecture for ECS Cluster.
+      
+Parameters:
+  EnvironmentName:
+    Type: String
+    Description: Give ECS Cluster Environment Name.
+    
+Resources:
+  ecstaskexecpolicy:
+    Type: AWS::IAM::Policy
+    Metadata:
+      Description: Policy for ECS task execution permission attached with Task Execution role.
+    Properties:
+      PolicyName: 
+        Fn::Sub: ${AWS::StackName}-ecstaskpullimage
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action:
+          - ecr:GetDownloadUrlForLayer
+          - ecr:BatchGetImage
+          - ecr:BatchCheckLayerAvailability
+          - ecr:PutImage
+          - ecr:InitiateLayerUpload
+          - ecr:UploadLayerPart
+          - ecr:CompleteLayerUpload
+          Resource:
+            Fn::Sub: arn:${AWS::Partition}:ecr:${AWS::Region}:${AWS::AccountId}:repository/*
+        - Effect: Allow
+          Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:PutLogEvents
+          - ecr:GetAuthorizationToken
+          Resource: "*"
+      Roles:
+      - Ref: ecstaskexecrole
+      
+  ecstaskexecrole:
+    Type: AWS::IAM::Role
+    Metadata:
+      Description: This resource creates ECS task execution role.
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Action: sts:AssumeRole
+          Principal:
+            Service: ecs-tasks.amazonaws.com
+            
+  fargate:
+    Type: AWS::ECS::Cluster
+    Metadata:
+      Description: This will create a ECS cluster with Insignts/monitoring enabled.
+    Properties:
+      ClusterSettings:
+        - Name: containerInsights
+          Value: enabled
+      Tags:
+        - Key: Name
+          Value: !Ref EnvironmentName
+
+Outputs:
+  Clustername:
+    Description: ECS cluster name of cluster which is deployed in this template.
+    Value: !Ref fargate
+
+  ClusterARN:
+    Description: ECS cluster ARN of cluster which is deployed in this template.
+    Value: !GetAtt fargate.Arn
+ 
+  EcsExecRoleName:
+    Description: Ecs task execution role name for access of ECS Task execution.
+    Value: !Ref ecstaskexecrole
+  
+  EcsExecRoleARN:
+    Description: Ecs task execution role arn
+    Value: !GetAtt ecstaskexecrole.Arn
+    

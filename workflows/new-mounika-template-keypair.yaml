@@ -1,0 +1,22 @@
+---
+DeployInfra:
+  AccountId: 014840411162
+  Region: us-east-1
+TemplateInfra:
+  AccountId: 014840411162
+  EmailId: mounika@archeplay.com
+  Region: us-east-1
+  TenantId: Tenant-01
+  ProjectId: Project-01
+  templaterepo: mylocalarchplaymounitest
+  templateinfraregion: us-east-1
+  triggerlambda: arn:aws:lambda:us-east-1:280111790906:function:mytrigger
+  apikey: abcdefghioppp
+  apisecret: zaasdfghjkuytfvbhgvbhgv
+Environmenthome: /home/ec2-user/environment/ap-environment
+deploymentversion: v1
+listoftemplates:
+  - templateid: KEYPAIR
+    templatedeploymentid: d7edf70f5
+    parametername: default
+    dependenttemplate: []

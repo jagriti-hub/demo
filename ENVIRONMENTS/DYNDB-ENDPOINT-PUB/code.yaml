@@ -1,0 +1,49 @@
+---
+AWSTemplateFormatVersion: 2010-09-09
+Description:  This template deploys Dynamodb Endpoint in public network.
+Metadata:
+  Architecture:
+    - Title: dynamodbendpoint
+      Image: image1
+      Description: Architecture for Vpc Dynamodb Endpoint.
+
+Parameters:
+  VPCID:
+    Description: This is a dependent parameter and will be taken from VPC environment.
+    Type: String
+
+  RouteTableId:
+    Description: This is public route table id and will be taken from VPC environment.
+    Type: String
+  
+  
+Resources:
+  VpcDynamodbEndpoint:
+    Type: 'AWS::EC2::VPCEndpoint'
+    Metadata:
+      Description: This resource will create a Dynamodb endpoint in public network.
+    Properties:
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal: '*'
+            Action:
+              - 'dynamodb:*'
+            Resource:
+              - '*'
+      RouteTableIds:
+        -
+          Ref: RouteTableId
+      ServiceName: 
+        'Fn::Sub': 'com.amazonaws.${AWS::Region}.dynamodb'
+      VpcId:
+        Ref: VPCID
+
+Outputs:
+  DynamodbEndpoint:
+    Description: Vpc endpoint for dynamodb
+    Value: !Ref VpcDynamodbEndpoint
+    Export: 
+      Name: 
+        Fn::Sub: "${AWS::StackName}-dynamodbendpoint"

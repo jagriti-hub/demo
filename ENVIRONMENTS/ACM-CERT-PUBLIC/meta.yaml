@@ -1,0 +1,30 @@
+---
+ServiceId: ACM-CERT-PUBLIC
+ServiceType: python
+EnvironmentType: Aws
+DependentEnvironments: 
+  - IMPORT-SUBDOMAIN
+ParameterOptions: []
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/acmcertpublic.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: ACM-CERT-PUBLIC
+EnvironmentName: Deploy a acm-certificate that you can use to enable secure connections
+Description: This will deploy a acm-certificate that you can use to enable secure connections
+EnvironmentDocs: docs/acmcertpublic.html
+EnvironmentGroup: ProjectEnvironments
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+CreditsPerHour: 0
+Actions:
+  Create:
+    - Create
+    - Describe
+  Delete:
+    - Delete
+    - Describe
+Limits:
+  - create a acm certificate
+

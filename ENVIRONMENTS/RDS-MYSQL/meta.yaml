@@ -1,0 +1,40 @@
+---
+ServiceId: RDS-MYSQL
+ServiceType: awscf
+EnvironmentType: Aws
+DependentEnvironments:
+  - VPC
+ParameterOptions:
+  - GetEnvironment: VPC
+    GetOutputKey: VPCID
+    ParameterKey: VPCID
+  - GetEnvironment: VPC
+    GetOutputKey: PrivateSubnet1ID
+    ParameterKey: PrivateSubnet1ID
+  - GetEnvironment: VPC
+    GetOutputKey: PrivateSubnet2ID
+    ParameterKey: PrivateSubnet2ID
+  # - ParameterKey: DBPassword
+  #   AutoGenerate: secret-
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/rdsmysql.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: RDS-MYSQL
+EnvironmentName: RDS MySQL Database Instance.
+Description: This environment deploys a Database instance of RDS MYSQL.
+EnvironmentDocs: docs/rdsmysql.html
+EnvironmentGroup: SQL-RDS
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - CreateStack
+    - DescribeStack
+  Delete:
+    - DescribeStack
+    - DeleteStack
+CreditsPerHour: 0
+Limits:
+  - A RDS MYSQL DATABASE INSTANCE

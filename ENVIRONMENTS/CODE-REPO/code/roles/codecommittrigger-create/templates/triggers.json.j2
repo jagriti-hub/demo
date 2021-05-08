@@ -1,0 +1,23 @@
+{
+  "repositoryName": "{{apiname}}",
+  "triggers": [
+      {
+          "destinationArn": "{{ap.triggerlambda}}",
+          "branches": [
+            "master",
+            {% for item in code.branches %}
+            {% if code.branches[-1]  == item %}
+            "{{ item }}"
+            {% else %}
+            "{{ item }}",
+            {% endif %}
+            {% endfor %}
+          ],
+          "name": "{{apiname}}CodeTrigger",
+          "customData": "{'templateid': '{{ap.templateid}}','tenantid': '{{ap.tenantid}}', 'projectid': '{{ap.projectid}}', 'apikey': '{{ap.apikey}}', 'apisecret': '{{ap.apisecret}}' }",
+          "events": [
+              "all"
+          ]
+      }
+  ]
+}

@@ -1,0 +1,37 @@
+---
+- name: "Delete DynamoDB Table"
+  hosts: localhost
+  become: true
+  tasks:
+  - block:
+      - set_fact:
+          db: "{{ lookup('vars', 'db')}}"
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: tablebackup
+          stepdesc: Backup the DynamoDB Table
+          stepno: 1
+          stepaction: delete
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: table
+          stepdesc: Delete the DynamoDB Table
+          stepno: 2
+          stepaction: delete
+      
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Deleted
+      
+    rescue:
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Failed

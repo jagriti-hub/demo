@@ -1,0 +1,167 @@
+Description: Python Code for creating, Describing and Deleting the EC2 keypair.
+Metadata:
+  Architecture:
+    - Title: COGNITO
+      Image: productapiasg-productkeypair
+      Description: Architecture for COGNITO.
+    
+Parameters:
+  PoolName:
+    Description: Give a cognito user pool name.
+    Type: String
+    Default: Test123
+  CertificateARN:
+    Description: It is a dependent parameter which is taken from acm cert public.
+    Type: String
+  HostedZoneId:
+    Description: It is a dependent parameter which is taken from PUBLIC-SUBDOMAIN.
+    Type: String
+  DOMAINNAME:
+    Description: It is a dependent parameter which is taken from PUBLIC-SUBDOMAIN.
+    Type: String
+  ClientName:
+    Description: Give a cognito user pool client name.
+    Type: String
+Resources:
+  Create:
+    Type: boto::ec2::create_key_pair
+    Metadata:
+      Description: This Python Function will Create the Ec2 Keypair
+    Code: |
+      cognito_client = connection.client("cognito-idp")
+      user_pool_fnc = cognito_client.create_user_pool(
+        PoolName='archeplay123',
+        Policies={
+          'PasswordPolicy': {
+            'MinimumLength': 8,
+            'RequireUppercase': True,
+            'RequireLowercase': True,
+            'RequireNumbers': True,
+            'RequireSymbols': True,
+            'TemporaryPasswordValidityDays': 20
+          }
+        },
+        UsernameAttributes=['email'],
+        AccountRecoverySetting={
+          'RecoveryMechanisms': [
+            {
+              'Priority': 1,
+              'Name': 'verified_email'
+            },
+            {
+              'Priority': 2,
+              'Name': 'verified_phone_number'
+            }
+          ]
+        },
+        Schema=[
+          {
+            'Name': 'email',
+            'AttributeDataType': 'String',   
+            'Required': True
+          },
+          {
+            'Name': 'name',
+            'AttributeDataType': 'String', 
+            'Required': True
+          },
+          {
+            'Name': 'phone_number',
+            'AttributeDataType': 'String',
+            'Required': True
+          }
+        ]
+      )
+      print(user_pool_fnc)
+      user_pool_client_fnc = cognito_client.create_user_pool_client(
+        UserPoolId=user_pool_fnc['UserPool']['Id'],
+        ClientName=Input["ClientName"],
+        GenerateSecret=True,
+        ExplicitAuthFlows=[
+          'ALLOW_USER_SRP_AUTH','ALLOW_REFRESH_TOKEN_AUTH'
+        ])
+      user_pool_client_domain_fnc = cognito_client.create_user_pool_domain(
+        Domain=Input["DOMAINNAME"],
+        UserPoolId=user_pool_fnc['UserPool']['Id'],
+        CustomDomainConfig={
+          'CertificateArn': Input["CertificateARN"]
+        }
+      )
+      print(user_pool_client_domain_fnc)
+      route = boto3.client("route53",region_name="us-east-1")
+      response = route.change_resource_record_sets(
+        HostedZoneId=Input["HostedZoneId"],
+        ChangeBatch={
+          'Changes': [  
+            {
+              'Action': 'CREATE',
+              'ResourceRecordSet': {
+                'Type': 'A',
+                'Name': Input["DOMAINNAME"],
+                'AliasTarget': {
+                  'HostedZoneId': 'Z2FDTNDATAQYW2',
+                  'DNSName': user_pool_client_domain_fnc['CloudFrontDomain'],
+                  'EvaluateTargetHealth': False
+                  },
+                }
+            },
+          ]
+          }
+        )
+      response = cognito_client.update_user_pool_client(UserPoolId=user_pool_fnc['UserPool']['Id'],ClientId=user_pool_client_fnc['UserPoolClient']['ClientId'],CallbackURLs=[
+        'https://test.archeplay.com'],LogoutURLs=['https://test.archeplay.com',],AllowedOAuthScopes=['phone','email','openid','profile','aws.cognito.signin.user.admin'],
+        AllowedOAuthFlows=['implicit'],AllowedOAuthFlowsUserPoolClient=True,SupportedIdentityProviders=['COGNITO'])
+      Outputs=[
+      {
+        "OutputKey":"UserPoolId",
+        "OutputValue":user_pool_fnc['UserPool']['Id']
+      },
+      {
+        "OutputKey":"DOMAINNAME",
+        "OutputValue":Input["DOMAINNAME"]
+      },
+      {
+        "OutputKey":"CloudFrontDomain",
+        "OutputValue":user_pool_client_domain_fnc['CloudFrontDomain']
+      },
+      {
+        "OutputKey":"ClientId",
+        "OutputValue":user_pool_client_fnc['UserPoolClient']['ClientId']
+      }
+      ]
+      OP={
+          "Outputs":Outputs,
+          "State":"Created"
+          }
+  Describe: 
+    Type: boto::ec2::describe_user_pool
+    Metadata:
+      Description: This Python Function will Describe the user pool
+    Code: |
+      OP={
+          "State":"Described"
+        }
+  Delete:
+    Type: boto::ec2::delete_user_pool
+    Metadata:
+      Description: This will delete the user pool
+    Code: |
+      cognito_client = connection.client("cognito-idp")
+      for item in Outputs:
+        if item["OutputKey"] == "UserPoolId":
+          UserPoolId = item["OutputValue"]
+      response = cognito_client.delete_user_pool_domain(
+        Domain=Input["DOMAINNAME"],
+        UserPoolId=UserPoolId
+      )
+      response = cognito_client.delete_user_pool(
+        UserPoolId=UserPoolId
+      )
+      OP={
+          "State":"Deleted"
+          }
+Outputs:
+  UserPoolId: 
+    Description: Id of the user pool which got created.
+  CloudFrontDomain:
+    Description: Cloudfront Domain of the user pool which got created.

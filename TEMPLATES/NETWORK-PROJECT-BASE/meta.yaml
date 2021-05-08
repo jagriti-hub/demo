@@ -1,0 +1,90 @@
+---
+TemplateId: NETWORK-PROJECT-BASE
+TemplateName: NETWORK PROJECT BASE WILL CREATE VPC, SUBNET, NATGATEWAY, ENDPOINTS
+TemplateInputs: {}
+TemplateOutputs: {}
+DependentTemplate: []
+TemplateActions:
+  Create:
+    - envid: VPC
+      deployid: t61fb21ae
+      action: Create
+    - envid: NATGATEWAY
+      deployid: t6d301b44
+      action: Create
+    - envid: S3-ENDPOINT-PUBLIC
+      deployid: tb06962e8
+      action: Create
+    - envid: DYNDB-ENDPOINT-PUB
+      deployid: t306d8596
+      action: Create
+  Delete:
+    - envid: DYNDB-ENDPOINT-PUB
+      deployid: t306d8596
+      action: Delete
+    - envid: S3-ENDPOINT-PUBLIC
+      deployid: tb06962e8
+      action: Delete
+    - envid: NATGATEWAY
+      deployid: t6d301b44
+      action: Delete
+    - envid: VPC
+      deployid: t61fb21ae
+      action: Delete
+EnvironmentGroups:
+  - GroupName: ProjectEnvironments
+    Environments:
+      - VPC
+      - NATGATEWAY
+      - S3-ENDPOINT-PUBLIC
+      - DYNDB-ENDPOINT-PUB
+Environments:
+  - EnvironmentId: VPC
+    DeployId: t61fb21ae
+    dependentenv: []
+  
+  - EnvironmentId: NATGATEWAY
+    DeployId: t6d301b44
+    dependentenv:
+      - EnvId: VPC
+        DeployId: t61fb21ae
+  
+  - EnvironmentId: S3-ENDPOINT-PUBLIC
+    DeployId: tb06962e8
+    dependentenv:
+      - EnvId: VPC
+        DeployId: t61fb21ae
+  
+  - EnvironmentId: DYNDB-ENDPOINT-PUB
+    DeployId: t306d8596
+    dependentenv:
+      - EnvId: VPC
+        DeployId: t61fb21ae
+  
+Parameters:
+  VpcCIDR:
+    Description: Specify an IPv4 CIDR block for the VPC. The smallest CIDR block you can specify is /28, and the largest is /16. 
+    Type: String
+    value: 10.0.0.0/16
+  
+  PublicSubnet1CIDR:
+    Description: Specify a CIDR block for the public subnet in the first Availability Zone, which is a subset of the VPC CIDR.
+    Type: String
+    value: 10.0.0.0/24
+  
+  PublicSubnet2CIDR:
+    Description: Specify a CIDR block for the public subnet in the second Availability Zone, which is a subset of the VPC CIDR.
+    Type: String
+    value: 10.0.1.0/24
+  
+  PrivateSubnet1CIDR:
+    Description: Specify a CIDR block for the private subnet in the first Availability Zone, which is a subset of the VPC CIDR.
+    Type: String
+    value: 10.0.2.0/24
+  
+  PrivateSubnet2CIDR:
+    Description: Specify a CIDR block for the private subnet in the second Availability Zone, which is a subset of the VPC CIDR.
+    Type: String
+    value: 10.0.4.0/24
+
+ProjectTemplate: True

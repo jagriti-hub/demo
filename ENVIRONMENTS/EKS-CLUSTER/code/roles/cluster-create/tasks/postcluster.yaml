@@ -1,0 +1,18 @@
+---
+- name: Step {{stepno}} - {{stepname}} - Executing
+  block:
+    - name: Step {{stepno}} - {{stepname}} - Task 3 - Load rabc-role file
+      Shell: |
+        /usr/bin/kubectl get nodes
+      register: describe
+    
+    - name: set step status
+      set_fact:
+        eksctl_status: finished
+  
+  rescue: 
+    - name: set step status
+      set_fact:
+        eksctl_status: failed
+
+  

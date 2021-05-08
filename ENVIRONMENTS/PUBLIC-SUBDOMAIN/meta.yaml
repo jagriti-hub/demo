@@ -1,0 +1,30 @@
+---
+ServiceId: PUBLIC-SUBDOMAIN
+ServiceType: python
+EnvironmentType: Aws
+DependentEnvironments: '[]'
+ParameterOptions:
+  - GetTemplate: DomainName
+    ParameterKey: DomainName
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/publicsubdomain.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: PUBLIC-SUBDOMAIN
+EnvironmentName: Deploy a public subdomain in route53
+Description: This will deploy a public subdomain
+EnvironmentDocs: docs/publicsubdomain.html
+EnvironmentGroup: ProjectEnvironments
+ActionEnvironment: "NULL"
+ParentEnvironment: "NULL"
+Actions:
+  Create:
+    - Create
+    - Describe
+  Delete:
+    - Delete
+    - Describe
+CreditsPerHour: 0
+Limits:
+  - create a public subdomain in route53

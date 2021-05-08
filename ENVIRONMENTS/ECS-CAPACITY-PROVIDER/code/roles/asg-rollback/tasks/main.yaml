@@ -1,0 +1,29 @@
+---
+- name: Step {{stepno}} - {{stepname}} - Executing
+  block:
+    - name: debug stepname
+      debug:
+        var: stepname
+  
+    - name: Step - 3 Task - 1 Delete Stack
+      script: cfexecrolback.py "{{apenvironment.region}}" '{{envdeploymentfolder}}/ecsparameter.json' "ASG-{{ apenvironment.deploymentid }}" "{{envdeploymentfolder}}/asgcreatecf.yaml" "{{ap.templaterepo}}" "{{apenvironment.deploymentid}}" "{{envdeploymentfolder}}"
+      args:
+        executable: python3
+      register: rollbackstack
+    
+    - debug:
+        var: rollbackstack
+    
+    - name: Task 4 - Stack outputs - Register the outputs
+      set_fact:
+        update_output: "false"
+        outputs: []
+    
+  rescue:
+    - name: Step {{stepno}} - {{stepname}} - Faiure Message Registering
+      set_fact: 
+        failedtask: "{{ansible_failed_task.name}}"
+        failedmessage: "{{ansible_failed_result.msg}} -- {{ansible_failed_result.stderr}}"
+    - name: 
+      fail:
+        msg:  Step {{stepno}} - {{stepname}}  is failed

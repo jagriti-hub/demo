@@ -1,0 +1,50 @@
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+
+metadata:
+  name: "{{ClusterName}}"
+  region: "{{apenvironment.region}}"
+
+cloudWatch:
+  clusterLogging:
+    enableTypes: ["*"]
+  
+vpc:
+  subnets:
+    private:
+      "{{PrivateSubnetAZ1}}":
+        id: "{{PrivateSubnetId1}}"
+      "{{PrivateSubnetAZ2}}":
+        id: "{{PrivateSubnetId2}}"
+    public:
+      "{{PublicSubnetAZ1}}":
+        id: "{{PublicSubnetId1}}"
+      "{{PublicSubnetAZ2}}":
+        id: "{{PublicSubnetId2}}"
+
+fargateProfiles:
+  - name: fp-default
+    selectors:
+      # All workloads in the "default" Kubernetes namespace will be
+      # scheduled onto Fargate:
+      - namespace: default
+      # All workloads in the "kube-system" Kubernetes namespace will be
+      # scheduled onto Fargate:
+      - namespace: kube-system
+
+iam:
+  withOIDC: true
+  serviceAccounts:
+  - metadata:
+      name: ingress-controller
+      namespace: kube-system
+      labels: {aws-usage: "cluster-ops"}
+    attachPolicyARNs: 
+    - "arn:aws:iam::{{ap.accountid}}:policy/ingress-controller"
+  - metadata:
+      name: dynamodb-access
+      namespace: default
+      labels: {aws-usage: "application"}
+    attachPolicyARNs:
+    - "arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess"
+  

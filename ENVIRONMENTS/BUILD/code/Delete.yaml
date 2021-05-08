@@ -1,0 +1,49 @@
+---
+- name: "Delete build for the Archeplay Template"
+  hosts: localhost
+  become: true
+  tasks:
+  - block:
+      - copy:
+          src: "{{envdeploymentfolder}}/output.json"
+          dest: "/tmp/output.json"
+          remote_src: yes
+      - include_vars:
+          file: "/tmp/output.json"
+          name: output
+      - debug:
+          var: output
+      - set_fact:
+          AppType: "{{ lookup('vars', 'AppType')}}"
+      
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: imagebuild
+          stepdesc: Delete the build
+          stepno: 1
+          stepaction: delete
+        when: AppType == "pythonflask"
+      
+      - name: Execute Step
+        include_role:
+          name: executestep
+        vars:
+          stepname: pythonlambda
+          stepdesc: Delete the build
+          stepno: 1
+          stepaction: delete
+        when: AppType == "pythonlambda"
+      
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Deleted
+    rescue:
+      - name: get env status
+        include_role:
+          name: stepop
+        vars:
+          envstatus: Failed

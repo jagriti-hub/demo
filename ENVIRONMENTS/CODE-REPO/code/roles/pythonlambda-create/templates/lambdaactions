@@ -1,0 +1,36 @@
+#!/bin/bash
+pathofapp=`echo $0|sed "s|/lambdaactions||g"`
+# echo $pathofapp
+# path=`echo $pathofapp | awk -F '/lambdaactions' '{print $1}'` 
+# echo $path
+while getopts "n:h:" option
+do
+    case $option in
+      n)
+         export functioname="$OPTARG"
+         ;;
+      h)
+         export handlername=$OPTARG
+         ;;
+    esac
+done
+if [ -z "$functioname" ]
+then
+    echo -e "Usage:\n./addlambda -n <functioname> -h <handlername> "
+    exit 100
+elif [ -z "$handlername" ]
+then
+    echo -e "Usage:\n./addlambda -n <functioname> -h <handlername> "
+    exit 100
+# elif [ -d "/$pathofapp/$functioname/" ]
+# then
+#     echo "Lambda with name $functioname already exist"
+#     exit 101
+else
+    echo -e "import json,boto3, requests\nimport aws_xray_sdk\nfrom aws_xray_sdk.core import xray_recorder\nfrom aws_xray_sdk.core import patch_all\npatch_all()\ndef $handlername(event, context):\n    # Write your code here\n    return {\n        'statusCode': 200,\n        'body': json.dumps('Hello from Lambda!')\n    }" > $pathofapp/$functioname/lambda_function.py
+fi
+
+
+
+
+

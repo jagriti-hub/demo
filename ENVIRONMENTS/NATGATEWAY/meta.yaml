@@ -1,0 +1,36 @@
+---
+ServiceId: NATGATEWAY
+ServiceType: awscf
+EnvironmentType: Aws
+DependentEnvironments:
+  - VPC
+ParameterOptions:
+    - GetEnvironment: VPC
+      GetOutputKey: PublicSubnet1ID
+      ParameterKey: PublicSubnetId
+    
+    - GetEnvironment: VPC
+      GetOutputKey: PrivateRouteTableId
+      ParameterKey: PrivateRouteTableId
+OutputOptions: '[]'
+Input:
+  Templatekey: Aws/natgateway.yaml
+UsageType: Permanent
+CostType: Nocost
+EnvironmentId: NATGATEWAY
+EnvironmentName: Deploys a NATGATEWAY.
+Description: This template deploys a NatGateway.
+EnvironmentDocs: docs/natgateway.html
+EnvironmentGroup: ProjectEnvironments
+ActionEnvironment: "NULL"
+ParentEnvironment: VPC
+Actions:
+  Create:
+    - CreateStack
+    - DescribeStack
+  Delete:
+    - DeleteStack
+    - DescribeStack
+CreditsPerHour: 0
+Limits:
+  - NATGATEWAY with private route configured to the VPC

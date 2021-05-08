@@ -1,0 +1,13 @@
+InstanceType{{deploymentid}}: t3.medium
+MinSizeASGs{{deploymentid}}: 1
+DesiredCapacityASG{{deploymentid}}: 1
+MaxSizeASGs{{deploymentid}}: 2
+LoadBalancerHealthCheckIntervalSeconds{{deploymentid}}: 10
+LoadBalancerHealthCheckPath{{deploymentid}}: /status
+InstancePort{{deploymentid}}: 80
+LoadBalancerHealthCheckTimeoutSeconds{{deploymentid}}: 5
+LoadBalancerHealthyThresholdCount{{deploymentid}}: 3
+LoadBalancerUnhealthyThresholdCount{{deploymentid}}: 2
+AutoscalingTargetValue{{deploymentid}}: 70
+ASGCoolDown{{deploymentid}}: 60
+AppName{{deploymentid}}: cart

@@ -1,0 +1,9 @@
+---
+workflows:
+  WorkflowId: wf-c00002
+  WorkflowName: lambdapackage
+  Environments:
+  - Name: Lambda-Package-Build
+    parameters: default
+    deploymentid: c000012
+    dependentenv: []

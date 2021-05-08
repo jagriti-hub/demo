@@ -1,0 +1,8 @@
+---
+Environmenthome: /home/ec2-user/environment/ap-environment
+deploymentversion: v1
+listoftemplates:
+  - templateid: API-PYTHON-FLASK-EC2
+    templatedeploymentid: tmp-a00001
+    parametername: default
+    dependenttemplate: []

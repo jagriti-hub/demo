@@ -1,0 +1,12 @@
+---
+Environmenthome: /home/ec2-user/environment/ap-environment
+deploymentversion: v1
+listoftemplates:
+  - templateid: PROJECT-ENVIRONMENTS
+    templatedeploymentid: tmp-a00000
+    parametername: default
+    dependenttemplate: []
+  - templateid: API-EC2
+    templatedeploymentid: tmp-a00001
+    parametername: default
+    dependenttemplate: []
